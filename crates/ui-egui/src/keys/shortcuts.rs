@@ -123,10 +123,16 @@ pub(super) fn dispatch(app: &mut WordApp, key: Key, m: Modifiers) -> bool {
     // Ctrl+F1 collapses the ribbon only when the user hasn't given it to a command (#1678); the
     // other interface shortcuts (Alt+Q, ⌘⌥R) keep their place ahead of the keymap.
     if let Some((id, params)) = ui_shortcut(key, m).filter(|_| key != Key::F1 || bound.is_none()) {
-        let _ = app.run(id, params);
+        if crate::viewer::refuses(app, id).is_none() {
+            let _ = app.run(id, params);
+        }
         return true;
     }
     if let Some(spec) = bound {
+        // The viewer swallows editing shortcuts (typing keys, Ctrl+B, Delete…) without a word.
+        if crate::viewer::refuses(app, spec.id).is_some() {
+            return true;
+        }
         // Option+Shift+- types an em dash on macOS; Word's Alt+Shift+- (Collapse) only works in
         // Outline view, so elsewhere the key stays typing (#1933).
         if m.alt && !crate::widgets::enabled(app, spec.id) {
@@ -141,6 +147,9 @@ pub(super) fn dispatch(app: &mut WordApp, key: Key, m: Modifiers) -> bool {
         && let Some(spec) = app.session.keymap.resolve(&reg, &combo(m, name, false))
         && let Some(params) = shift_variant_params(spec.id)
     {
+        if crate::viewer::refuses(app, spec.id).is_some() {
+            return true;
+        }
         let _ = app.run(spec.id, params);
         return true;
     }

@@ -109,6 +109,11 @@ impl WordApp {
     /// Run a command for a script or an agent (control channel, MCP bridge): never asks first.
     /// UI-level commands (`ui.*`) are handled here, the rest by the engine.
     pub fn execute(&mut self, id: &str, params: Value) -> Result<Value, String> {
+        // The viewer refuses editing before anything here handles the command: AutoSave, the
+        // table pen and Zotero are handled in the interface, not the engine.
+        if let Some(why) = crate::viewer::refuses(self, id) {
+            return Err(format!("{id}: {why}"));
+        }
         self.clear_command_targets(id);
         if let Some(error) = self.document_required_error(id) {
             return Err(error);

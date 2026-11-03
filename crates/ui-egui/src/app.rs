@@ -205,6 +205,14 @@ impl WordApp {
         self.ui.start_screen
     }
 
+    /// Start-up with nothing to open in the viewer (`docs/viewer.md`): an empty window that asks
+    /// for a document to open, without the File page.
+    pub fn start_empty(&mut self) {
+        self.ui.backstage = false;
+        self.no_document = Some(self.session.document_id());
+        self.session.release_untitled_name();
+    }
+
     /// Whether a document is open: false from a Start screen launch until the user creates or
     /// opens one (#1129).
     pub fn has_document(&self) -> bool {

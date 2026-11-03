@@ -50,6 +50,8 @@ impl WordApp {
         let moved = |app: &WordApp| app.windows.shown() != window;
         if self.ui.backstage {
             backstage::show(self, ui);
+        } else if self.session.viewer {
+            self.paint_viewer_window(ui, t);
         } else if !self.has_document() {
             // No document open (#1129): the ribbon greyed out but for Help, and no page.
             chrome::title_bar(self, ui);
@@ -86,6 +88,41 @@ impl WordApp {
                 chrome::focus_ribbon(self, ctx);
             }
         }
+    }
+
+    /// The viewer's window (`docs/viewer.md`): its toolbar in place of the title bar and ribbon,
+    /// then the status bar, panes and pages as in the editor's Print Layout. Focus and Full Screen
+    /// keep their slim bar.
+    fn paint_viewer_window(&mut self, ui: &mut egui::Ui, t: theme::Tokens) {
+        let window = self.windows.shown();
+        let moved = |app: &WordApp| app.windows.shown() != window;
+        self.focus_ribbon = false;
+        if !self.has_document() {
+            crate::viewer::bar(self, ui);
+            if moved(self) {
+                return;
+            }
+            crate::viewer::empty(self, ui);
+            return;
+        }
+        let screen = chrome::Screen::of(&self.session.view);
+        if screen != chrome::Screen::Normal {
+            chrome::screen_bar(self, ui, screen);
+        } else {
+            crate::viewer::bar(self, ui);
+            if moved(self) {
+                return;
+            }
+            chrome::status_bar(self, ui);
+            panes::show(self, ui);
+        }
+        if moved(self) {
+            return;
+        }
+        let fill = if screen == chrome::Screen::Focus { chrome::FOCUS_CANVAS } else { t.canvas };
+        egui::CentralPanel::default().frame(egui::Frame::NONE.fill(fill)).show(ui, |ui| {
+            canvas::show(self, ui);
+        });
     }
 
     /// Dialogs, panes and other overlays drawn over the window. A command that brings another

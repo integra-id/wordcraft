@@ -21,6 +21,10 @@ pub fn canvas_events(app: &mut WordApp, ctx: &egui::Context) {
         read_mode_events(app, ctx, &events, window);
         return;
     }
+    if app.session.viewer {
+        viewer_events(app, ctx, &events, window);
+        return;
+    }
     let alt_codes = alt_codes_supported(ctx);
     // The erased text's formatting is carried only for a replacement in this raw batch. The
     // undo join belongs to the deletion transaction instead: the engine's scoped
@@ -105,6 +109,33 @@ fn read_mode_events(app: &mut WordApp, ctx: &egui::Context, events: &[egui::Even
                 if !selected.is_empty() {
                     ctx.copy_text(selected);
                 }
+            }
+            _ => {}
+        }
+    }
+}
+
+/// The viewer's page (`docs/viewer.md`): nothing types, pastes or cuts. Keys still move the
+/// caret and selection, copy, find, zoom and open the context menu; a shortcut for an editing
+/// command does nothing (`dispatch` swallows it).
+fn viewer_events(app: &mut WordApp, ctx: &egui::Context, events: &[egui::Event], window: u64) {
+    for e in events {
+        if app.windows.shown() != window {
+            break;
+        }
+        note_key_state(app, e);
+        match e {
+            egui::Event::Key { key, pressed: true, modifiers, .. } => {
+                let (key, modifiers) = (*key, *modifiers);
+                if is_context_menu_key(key, modifiers) {
+                    app.canvas.context_menu_from_keys = true;
+                } else if !leave_full_screen(app, ctx, key, modifiers, true) {
+                    dispatch(app, key, modifiers);
+                }
+            }
+            // `run` puts the copied text on the system clipboard itself.
+            egui::Event::Copy => {
+                let _ = app.run("edit.copy", json!({}));
             }
             _ => {}
         }

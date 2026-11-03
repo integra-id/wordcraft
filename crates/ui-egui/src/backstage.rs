@@ -64,6 +64,10 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
     if !has_document && !works_without_document(&app.ui.backstage_page) {
         app.ui.backstage_page = "home".into();
     }
+    // The viewer's File page has no New, Info, Save or Recover (`docs/viewer.md`).
+    if !crate::viewer::shows_backstage_page(app, &app.ui.backstage_page) {
+        app.ui.backstage_page = crate::viewer::BACKSTAGE_START.into();
+    }
     let mac = app.integrated_titlebar;
     egui::Panel::left("backstage_nav")
         .exact_size(200.0)
@@ -101,6 +105,9 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
             }
             ui.add_space(if mac { 12.0 } else { 6.0 });
             for (id, label, icon) in PAGES {
+                if !crate::viewer::shows_backstage_page(app, id) {
+                    continue;
+                }
                 // No document open (#1129): Info, Save, Save As, Print and Export are greyed out.
                 let on = has_document || works_without_document(id);
                 let (r, resp) = ui.add_enabled_ui(on, |ui| ui.allocate_exact_size(vec2(200.0, 38.0), Sense::click())).inner;
@@ -224,7 +231,7 @@ fn recovery_page(app: &mut WordApp, ui: &mut Ui) {
 /// Opens a side-menu page, as a click on it (or its keytip) does. Without a document only the
 /// pages that work without one open.
 pub(crate) fn go_to_page(app: &mut WordApp, id: &str) {
-    if !app.has_document() && !works_without_document(id) {
+    if (!app.has_document() && !works_without_document(id)) || !crate::viewer::shows_backstage_page(app, id) {
         return;
     }
     match id {

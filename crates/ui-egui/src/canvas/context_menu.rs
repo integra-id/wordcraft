@@ -48,7 +48,24 @@ fn equation_menu(app: &mut WordApp, ui: &mut Ui) {
     }
 }
 
+/// The viewer's context menu (`docs/viewer.md`): copying, selecting and finding, nothing that
+/// edits.
+fn viewer_menu(app: &mut WordApp, ui: &mut Ui) {
+    ui.set_min_width(200.0);
+    for (label, id) in [("Copy", "edit.copy"), ("Select All", "select.all"), ("Find…", "edit.find")] {
+        let sc = crate::widgets::shortcut_text(app, id);
+        let on = crate::widgets::enabled(app, id);
+        if ui.add_enabled(on, egui::Button::new(tl!(label)).shortcut_text(sc)).clicked() {
+            let _ = app.run(id, json!({}));
+            ui.close();
+        }
+    }
+}
+
 pub(super) fn context_menu(app: &mut WordApp, ui: &mut Ui) {
+    if app.session.viewer {
+        return viewer_menu(app, ui);
+    }
     if app.session.math.is_some() {
         return equation_menu(app, ui);
     }

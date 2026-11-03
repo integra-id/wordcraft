@@ -694,7 +694,8 @@ fn qat_key(app: &mut WordApp, name: &str) {
 
 /// Alt (or F10) turns keytips on: the first press shows the tab badges.
 pub fn activate(app: &mut WordApp) {
-    if app.ui.keytips_enabled && app.ui.keytips == Phase::Off {
+    // The viewer has no ribbon to show keytips on.
+    if app.ui.keytips_enabled && app.ui.keytips == Phase::Off && !app.session.viewer {
         app.ui.keytip_prefix.clear();
         app.ui.keytips = Phase::Tabs;
     }
@@ -708,6 +709,7 @@ use crate::keys;
 /// so the next letter is typed and never picks a page that is no longer there.
 pub fn suppressed(app: &WordApp, ctx: &egui::Context) -> bool {
     !app.ui.keytips_enabled
+        || app.session.viewer
         || (app.ui.backstage && app.ui.keytips != Phase::Backstage)
         || (!app.ui.backstage && app.ui.keytips == Phase::Backstage)
         || app.dialog.is_some()
