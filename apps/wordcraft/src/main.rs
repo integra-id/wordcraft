@@ -1,4 +1,6 @@
-//! WordCraft desktop app.
+//! WordCraft Viewer desktop app: opens documents read-only, prints them and exports them to PDF
+//! and the other formats WordCraft writes. Editing and the ribbon are turned off
+//! ([`Session::viewer`]); see `docs/viewer.md`.
 //!
 //! Usage: `wordcraft [--control <port>] [--sample] [files…]`; `--help` prints `USAGE`.
 //!
@@ -292,10 +294,15 @@ fn app_icon() -> Option<egui::IconData> {
 }
 
 const USAGE: &str = "\
-wordcraft — the WordCraft desktop app
+wordcraft — WordCraft Viewer: view, print and export documents (read-only)
 
 USAGE:
   wordcraft [--sample] [--control PORT] [FILE…]
+
+Opens .docx, .docm, .dotx, .doc, .odt, .rtf, .html, .md, .tex and .txt files read-only.
+File › Export (or the toolbar's PDF and Export buttons) saves a copy as PDF, DOCX, ODT, RTF,
+HTML, Markdown, LaTeX, plain text or PNG. Editing commands are turned off; for headless
+conversion use `wordcraft-cli convert IN OUT`.
 
 OPTIONS:
   --sample            open the sample document
@@ -431,7 +438,7 @@ fn main() -> eframe::Result {
     }
     let mut options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title("WordCraft")
+            .with_title(wordcraft_ui_egui::viewer::NAME)
             .with_app_id("ai.storyteller.wordcraft")
             .with_inner_size([1440.0, 920.0])
             .with_min_inner_size([760.0, 480.0])
@@ -486,6 +493,8 @@ fn main() -> eframe::Result {
             let (file_dialog, dialogs) = file_dialogs::hook(&cc.egui_ctx);
             let mut session = Session::new(doc);
             session.system_region = region;
+            // This app is the viewer: the engine refuses every editing command (`docs/viewer.md`).
+            session.viewer = true;
             let mut app = WordApp::new(session, services(file_dialog, &cc.egui_ctx));
             app.set_startup_update_check(true);
             load_prefs(&mut app);
@@ -522,11 +531,10 @@ fn main() -> eframe::Result {
                 app = app.with_control(rx);
                 key_file = file;
             }
-            // Nothing to open (no files, no sample, no control channel driving the editor): start
-            // on File › Home, as Word does (#766), unless the Start screen option is off. Files
-            // macOS hands over later open on top of it and close it (`apple_events`).
-            if files.is_empty() && other_files.is_empty() && !sample && control_port.is_none() {
-                app.start_screen();
+            // Nothing to open (no files, no sample): the viewer starts empty, asking for a
+            // document to open. Files macOS hands over later open in its place (`apple_events`).
+            if files.is_empty() && other_files.is_empty() && !sample {
+                app.start_empty();
             }
             for f in files {
                 if let Err(e) = app.run("file.open", serde_json::json!({"path": f})) {
