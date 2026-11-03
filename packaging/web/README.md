@@ -57,8 +57,9 @@ the certificate, and drop it into `/etc/nginx/conf.d/`. It
 - sends the `.br`/`.gz` copies with `gzip_static on;` and `brotli_static on;`. Brotli needs the
   ngx_brotli static module (Debian/Ubuntu `libnginx-mod-http-brotli-static`); without it, delete
   the `brotli_static` line and gzip is used;
-- caches the hashed `wordcraft-web-<hash>.js`, `wordcraft-web-<hash>_bg.wasm` and icon for a year
-  (`immutable`), `fonts/` and `egui-fonts/` for a week, and revalidates `index.html` (`no-cache`);
+- caches the hashed `wordcraft-web-<hash>.js`, `wordcraft-web-<hash>_bg.wasm`, icon and
+  `snippets/<crate>-<hash>/` for a year (`immutable`), `fonts/` and `egui-fonts/` for a week,
+  and revalidates `index.html` (`no-cache`);
 - redirects plain HTTP to HTTPS (WebGPU, the clipboard and the save picker need a secure
   context);
 - shows, commented out, the same rules under a sub-path (`location /wordcraft/` with `alias`):
