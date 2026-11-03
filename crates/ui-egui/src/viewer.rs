@@ -13,6 +13,20 @@ use serde_json::json;
 use crate::theme::{Tokens, TypeRung, medium, paint_text, text_width};
 use crate::{WordApp, icons};
 
+/// Whether this build has the editing interface (the `editor` feature, on for the desktop app).
+/// Without it the app is always the viewer ([`WordApp::is_viewer`]): every branch that only the
+/// editor takes is then dead, and the build leaves the ribbon, the editing dialogs, the mini
+/// toolbar and the rest of the editing interface out (the web app's download).
+pub const EDITOR: bool = cfg!(feature = "editor");
+
+impl WordApp {
+    /// Whether the window is the WordCraft Viewer: the session is in viewer mode, or this build
+    /// has no editing interface ([`EDITOR`]).
+    pub fn is_viewer(&self) -> bool {
+        !EDITOR || self.session.viewer
+    }
+}
+
 /// The app's name in the viewer's toolbar and window title.
 pub const NAME: &str = "WordCraft Viewer";
 
@@ -43,7 +57,7 @@ pub const BACKSTAGE_START: &str = "open";
 /// Why the viewer refuses command `id` (engine, interface or Zotero), or `None` when it runs it
 /// or the app isn't the viewer.
 pub fn refuses(app: &WordApp, id: &str) -> Option<&'static str> {
-    if !app.session.viewer {
+    if !app.is_viewer() {
         return None;
     }
     if UI_EDITING.contains(&id) || id.starts_with("zotero.") {
@@ -55,7 +69,7 @@ pub fn refuses(app: &WordApp, id: &str) -> Option<&'static str> {
 
 /// Whether the File page shows page `id` in this app.
 pub fn shows_backstage_page(app: &WordApp, id: &str) -> bool {
-    !app.session.viewer || BACKSTAGE_PAGES.contains(&id)
+    !app.is_viewer() || BACKSTAGE_PAGES.contains(&id)
 }
 
 /// A toolbar button: an icon, with the label beside it when `label` is set. Returns whether it
@@ -280,6 +294,23 @@ mod tests {
         h.event(egui::Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers });
         h.event(egui::Event::Key { key, physical_key: None, pressed: false, repeat: false, modifiers });
         h.run_steps(2);
+    }
+
+    /// The viewer opens its own dialogs, and none of the editing ones; the editor opens both.
+    /// (A build without `editor` has only the viewer's: `Dialog::open_viewing`.)
+    #[test]
+    fn viewer_dialogs_open_in_both_and_editing_ones_only_in_the_editor() {
+        const { assert!(super::EDITOR, "the tests build the editing interface") };
+        let mut v = viewer("Hello");
+        assert!(v.is_viewer());
+        for name in ["find", "goto", "zoom", "wordCount", "about"] {
+            assert!(crate::dialogs::Dialog::open(name, &mut v).is_some(), "{name}");
+        }
+        let mut e = WordApp::new(Session::new(wordcraft_doc::Document::from_text("Hello")), Services::default());
+        assert!(!e.is_viewer());
+        for name in ["find", "zoom", "font", "paragraph", "pageSetup"] {
+            assert!(crate::dialogs::Dialog::open(name, &mut e).is_some(), "{name}");
+        }
     }
 
     /// The viewer's window has its toolbar, not the title bar, ribbon or Quick Access Toolbar.

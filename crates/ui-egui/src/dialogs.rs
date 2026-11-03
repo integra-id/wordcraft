@@ -562,6 +562,62 @@ impl Dialog {
     }
 
     pub fn open(name: &str, app: &mut WordApp) -> Option<Dialog> {
+        if let Some(d) = Self::open_viewing(name, app) {
+            return Some(d);
+        }
+        // A build without the editing interface has only the viewer's dialogs; this leaves the
+        // others out of it.
+        if !crate::viewer::EDITOR {
+            return None;
+        }
+        Self::open_editing(name, app)
+    }
+
+    /// The dialogs the viewer has too: Find and Go To, Zoom, Word Count, the command search and
+    /// About.
+    fn open_viewing(name: &str, app: &mut WordApp) -> Option<Dialog> {
+        Some(match name {
+            "find" | "replace" | "goto" => Dialog::Find {
+                query: if app.session.sel.is_collapsed() { app.session.find.query.clone() } else { app.session.selected_text() },
+                replace: app.session.find.replace.clone(),
+                match_case: app.session.find.match_case,
+                whole_word: app.session.find.whole_word,
+                regex: app.session.find.regex,
+                extra: FindExtra {
+                    wildcards: app.session.find.wildcards,
+                    prefix: app.session.find.match_prefix,
+                    suffix: app.session.find.match_suffix,
+                    ignore_punct: app.session.find.ignore_punct,
+                    ignore_space: app.session.find.ignore_space,
+                    more: app.session.find.wildcards
+                        || app.session.find.match_prefix
+                        || app.session.find.match_suffix
+                        || app.session.find.ignore_punct
+                        || app.session.find.ignore_space,
+                    to_replace: false,
+                },
+                tab: match name {
+                    "replace" => FindTab::Replace,
+                    "goto" => FindTab::GoTo,
+                    _ => FindTab::Find,
+                },
+                goto_what: GoToWhat::Page,
+                goto_target: String::new(),
+                message: String::new(),
+                focus: true,
+            },
+            "wordCount" => Dialog::WordCount { stats: app.session.run("review.wordCount", &json!({})).unwrap_or_default() },
+            "zoom" => Dialog::Zoom { percent: (app.session.view.zoom * 100.0).round() },
+            "commands" => Dialog::Commands { query: String::new(), swallow: true },
+            "about" => Dialog::About { tab: 0 },
+            "contributors" => Dialog::About { tab: 1 },
+            "models" => Dialog::About { tab: 2 },
+            "languageData" => Dialog::About { tab: 3 },
+            _ => return None,
+        })
+    }
+
+    fn open_editing(name: &str, app: &mut WordApp) -> Option<Dialog> {
         if let Some(d) = crate::dialogs_insert::open(name, app) {
             return Some(Dialog::Insert(Box::new(d)));
         }
@@ -651,35 +707,6 @@ impl Dialog {
                 };
                 Dialog::Borders { form: Box::new(crate::dialogs_para::BordersForm::read(app, tab)?) }
             }
-            "find" | "replace" | "goto" => Dialog::Find {
-                query: if app.session.sel.is_collapsed() { app.session.find.query.clone() } else { app.session.selected_text() },
-                replace: app.session.find.replace.clone(),
-                match_case: app.session.find.match_case,
-                whole_word: app.session.find.whole_word,
-                regex: app.session.find.regex,
-                extra: FindExtra {
-                    wildcards: app.session.find.wildcards,
-                    prefix: app.session.find.match_prefix,
-                    suffix: app.session.find.match_suffix,
-                    ignore_punct: app.session.find.ignore_punct,
-                    ignore_space: app.session.find.ignore_space,
-                    more: app.session.find.wildcards
-                        || app.session.find.match_prefix
-                        || app.session.find.match_suffix
-                        || app.session.find.ignore_punct
-                        || app.session.find.ignore_space,
-                    to_replace: false,
-                },
-                tab: match name {
-                    "replace" => FindTab::Replace,
-                    "goto" => FindTab::GoTo,
-                    _ => FindTab::Find,
-                },
-                goto_what: GoToWhat::Page,
-                goto_target: String::new(),
-                message: String::new(),
-                focus: true,
-            },
             "insertTable" => Dialog::InsertTable { rows: 2, cols: 5 },
             "pageSetup" => {
                 let sp = wordcraft_engine::cmd::page::sect(&app.session);
@@ -716,8 +743,6 @@ impl Dialog {
                 Dialog::Link { url: "https://".into(), text: app.session.selected_text(), place: false, targets: None, pick: None, focus: true }
             }
             "bookmark" => Dialog::Bookmark { name: bookmark_at_caret(&app.session), by_location: false, hidden: false, deleted: false },
-            "wordCount" => Dialog::WordCount { stats: app.session.run("review.wordCount", &json!({})).unwrap_or_default() },
-            "zoom" => Dialog::Zoom { percent: (app.session.view.zoom * 100.0).round() },
             "watermark" => Dialog::Watermark { text: "CONFIDENTIAL".into(), diagonal: true },
             "phonetic" => {
                 let v = wordcraft_engine::cmd::phonetic::state(&app.session);
@@ -736,7 +761,6 @@ impl Dialog {
             "newStyle" => Dialog::NewStyle { name: "Style1".into(), based_on: "Normal".into(), back: false },
             "manageStyles" => Dialog::ManageStyles { alphabetical: false, selected: s("style") },
             "newTableStyle" | "modifyTableStyle" => crate::dialogs_table_style::open(app, name)?,
-            "commands" => Dialog::Commands { query: String::new(), swallow: true },
             "macros" => Dialog::Macros { name: String::new() },
             "icons" => Dialog::Icons { query: String::new(), category: String::new(), selected: String::new() },
             "tableProperties" => {
@@ -759,10 +783,6 @@ impl Dialog {
             }
             "pasteSpecial" => Dialog::paste_special(app, &json!({})),
             "renameDocument" => Dialog::RenameDocument { name: app.title_stem(), message: String::new(), focus: true },
-            "about" => Dialog::About { tab: 0 },
-            "contributors" => Dialog::About { tab: 1 },
-            "models" => Dialog::About { tab: 2 },
-            "languageData" => Dialog::About { tab: 3 },
             // The current list to edit, or a new one to type.
             "recipientList" | "newRecipientList" => {
                 let m = &app.session.merge;

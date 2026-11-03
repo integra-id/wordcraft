@@ -105,7 +105,7 @@ pub fn shown_id() -> egui::Id {
 /// Whether the bar may be shown for the current app state.
 pub fn visible(app: &WordApp) -> bool {
     // Reading Mode permits text selection and copying, but never formatting controls.
-    if app.session.view.read_mode || app.session.viewer {
+    if app.session.view.read_mode || app.is_viewer() {
         return false;
     }
     // Never over a modal dialog or the Backstage.
@@ -203,7 +203,7 @@ pub fn show(app: &mut WordApp, ctx: &egui::Context, selection: Rect, viewport: R
 pub fn context_menu_visible(app: &WordApp) -> bool {
     app.ui.mini_toolbar
         && !app.session.view.read_mode
-        && !app.session.viewer
+        && !app.is_viewer()
         && app.session.math.is_none()
         && app.session.cell_range().is_none()
         && !crate::ribbon::has_picture_selected(&app.session)

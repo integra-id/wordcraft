@@ -34,7 +34,8 @@ wordcraft-engine = { path = "crates/engine" }
 wordcraft-mcp = { path = "crates/mcp" }
 wordcraft-zotero = { path = "crates/zotero" }
 wordcraft-control-key = { path = "crates/control-key" }
-wordcraft-ui-egui = { path = "crates/ui-egui" }
+# Without `editor` (on for the desktop app), the viewer-only interface: wordcraft-web.
+wordcraft-ui-egui = { path = "crates/ui-egui", default-features = false }
 wordcraft-metafile = { path = "crates/metafile" }
 
 # foundation

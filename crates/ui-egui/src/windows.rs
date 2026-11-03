@@ -569,12 +569,12 @@ impl WordApp {
     /// The drawn window's title: its document's name as View › Window › Switch Windows gives it.
     pub(crate) fn window_title(&self) -> String {
         if !self.has_document() {
-            return if self.session.viewer { crate::viewer::NAME } else { "WordCraft" }.to_string();
+            return if self.is_viewer() { crate::viewer::NAME } else { "WordCraft" }.to_string();
         }
         let mut name = self.windows.menu_title(self.windows.shown).map(str::to_string).unwrap_or_else(|| self.title_stem());
         // X11 converts window titles to C strings, which cannot contain NUL (#3634).
         name.retain(|c| c != '\0');
-        if self.session.viewer {
+        if self.is_viewer() {
             return format!("{name} - {}", crate::viewer::NAME);
         }
         title(&name, self.session.dirty)

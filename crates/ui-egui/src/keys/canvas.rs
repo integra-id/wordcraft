@@ -21,7 +21,7 @@ pub fn canvas_events(app: &mut WordApp, ctx: &egui::Context) {
         read_mode_events(app, ctx, &events, window);
         return;
     }
-    if app.session.viewer {
+    if app.is_viewer() {
         viewer_events(app, ctx, &events, window);
         return;
     }

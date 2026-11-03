@@ -8,6 +8,12 @@ description = "WordCraft egui front end (Word-style ribbon UI); swappable: nothi
 [lints]
 workspace = true
 
+[features]
+default = ["editor"]
+# The editing interface: the ribbon, the editing dialogs, the mini toolbar, keytips … Without it
+# the app is always the WordCraft Viewer (`viewer::EDITOR`), and the build leaves that code out.
+editor = []
+
 [dependencies]
 craft-ui = { git = "https://github.com/storytold/craft-libs", rev = "92d392cff132eaf53e13afff77f38b5c11b73aa0" }
 # Interface translations: lookup, fallback, plurals and system-locale matching over the craft-i18n

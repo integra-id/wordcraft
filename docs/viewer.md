@@ -72,6 +72,12 @@ history and dirty flag are unchanged.
   (`?sample` opens the sample). Open (File › Open, drag and drop, `?host=parent`) reads the
   file in the browser; Export, PDF and Print download the result. Build it small with
   `trunk build --release --cargo-profile web` (`packaging/web/README.md`).
+- The `editor` feature of `wordcraft-ui-egui` (on for the desktop app, off for the web app):
+  without it `viewer::EDITOR` is false, `WordApp::is_viewer` is always true and `WordApp::new`
+  puts the session in viewer mode, so every editor-only branch is dead and the build leaves out
+  the ribbon, keytips, the mini toolbar, the editing context menus and every dialog but the
+  viewer's (`Dialog::open_viewing`: Find/Go To, Zoom, Word Count, command search, About; plus
+  password, unsaved changes and recovery). The engine's commands stay in either build.
 - Screenshots: `{"viewer": true}` on the first line of a `ui_shot` script
   (`cargo run -p wordcraft-ui-egui --example ui_shot -- script.jsonl`).
 

@@ -50,7 +50,7 @@ impl WordApp {
         let moved = |app: &WordApp| app.windows.shown() != window;
         if self.ui.backstage {
             backstage::show(self, ui);
-        } else if self.session.viewer {
+        } else if self.is_viewer() {
             self.paint_viewer_window(ui, t);
         } else if !self.has_document() {
             // No document open (#1129): the ribbon greyed out but for Help, and no page.

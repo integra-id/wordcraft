@@ -11,6 +11,11 @@ use super::{Dialog, MeasureExt, Tokens, Ui, Value, WordApp, json, semibold, vec2
 
 /// Returns true to close.
 pub(super) fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
+    // A build without the editing interface draws only the dialogs the viewer opens; this leaves
+    // the others out of it.
+    if !crate::viewer::EDITOR {
+        return viewer_body(app, ui, d);
+    }
     match d {
         Dialog::RenameDocument { .. } => rename_document_dialog(app, ui, d),
         Dialog::Font { .. } => font_dialog(app, ui, d),
@@ -64,6 +69,22 @@ pub(super) fn body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
         Dialog::MergeRule { .. } => merge_rule_dialog(app, ui, d),
         Dialog::MatchFields { .. } => match_fields_dialog(ui, d),
         Dialog::CheckErrors { .. } => check_errors_dialog(ui, d),
+    }
+}
+
+/// The viewer's dialogs (`Dialog::open_viewing`, and those the app opens itself: passwords,
+/// unsaved changes, recovered files). Any other closes.
+fn viewer_body(app: &mut WordApp, ui: &mut Ui, d: &mut Dialog) -> bool {
+    match d {
+        Dialog::Find { .. } => find_dialog(app, ui, d),
+        Dialog::WordCount { .. } => word_count_dialog(app, ui, d),
+        Dialog::Zoom { .. } => zoom_dialog(app, ui, d),
+        Dialog::Commands { .. } => commands_dialog(app, ui, d),
+        Dialog::About { .. } => about_dialog(ui, d),
+        Dialog::Password { .. } => password_dialog(app, ui, d),
+        Dialog::SaveChanges { .. } => save_changes_dialog(app, ui, d),
+        Dialog::DiscardRecovery { .. } => discard_recovery_dialog(app, ui, d),
+        _ => true,
     }
 }
 

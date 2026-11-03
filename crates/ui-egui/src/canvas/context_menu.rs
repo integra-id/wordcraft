@@ -63,7 +63,7 @@ fn viewer_menu(app: &mut WordApp, ui: &mut Ui) {
 }
 
 pub(super) fn context_menu(app: &mut WordApp, ui: &mut Ui) {
-    if app.session.viewer {
+    if app.is_viewer() {
         return viewer_menu(app, ui);
     }
     if app.session.math.is_some() {
