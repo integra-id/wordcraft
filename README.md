@@ -172,7 +172,9 @@ wordcraft-cli run --template sample \
 wordcraft-cli run --script job.json                 # the same from a file: commands, then save to docx and pdf
 ```
 
-Web: `cd apps/wordcraft-web && trunk serve`, then open <http://127.0.0.1:8771/?sample>.
+Web: `cd apps/wordcraft-web && trunk serve`, then open <http://127.0.0.1:8771/?sample>. For a deploy, build
+the small wasm with `trunk build --release --cargo-profile web` (or `packaging/web/package.sh`); see
+[packaging/web/README.md](packaging/web/README.md#download-size).
 
 ## For agents: CLI and MCP
 

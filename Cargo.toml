@@ -129,6 +129,17 @@ lto = "thin"
 codegen-units = 16
 debug = 0
 
+# Small web build: `trunk build --release --cargo-profile web` (see packaging/web/README.md).
+# Size over speed: opt-level "z", one codegen unit with fat LTO, no symbols. wasm32 already
+# aborts on panic. Only builds that name this profile use it.
+[profile.web]
+inherits = "release"
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+strip = true
+panic = "abort"
+
 # Required by craft-pdf: the backend rejects writers that failed during unwinding.
 [patch.crates-io]
 krilla = { git = "https://github.com/storytold/craft-libs", rev = "92d392cff132eaf53e13afff77f38b5c11b73aa0" }

@@ -1,4 +1,5 @@
-# Build with: trunk build --release   (from apps/wordcraft-web)
+# Build with: trunk build --release --cargo-profile web   (from apps/wordcraft-web)
+# `--cargo-profile web` is the small build (Cargo.toml `[profile.web]`, packaging/web/README.md).
 [build]
 target = "index.html"
 dist = "../../dist/web"

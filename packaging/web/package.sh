@@ -13,7 +13,8 @@ HERE="$ROOT/packaging/web"
 
 if [[ "${1:-}" != "--skip-build" ]]; then
   command -v trunk >/dev/null || { echo "error: trunk not found (cargo install trunk --locked)" >&2; exit 1; }
-  (cd "$ROOT/apps/wordcraft-web" && trunk build --release)
+  # The `web` profile (Cargo.toml) builds for size: about 24 MB of wasm instead of about 44 MB.
+  (cd "$ROOT/apps/wordcraft-web" && trunk build --release --cargo-profile web)
 fi
 
 SITE="$ROOT/dist/web"
