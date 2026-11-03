@@ -47,17 +47,30 @@ hash, so they can be cached forever. Only `index.html` needs revalidation.
   COEP `require-corp`, also send `Cross-Origin-Resource-Policy: same-origin` (or `cross-origin`
   when the files live on a CDN) on the app's files.
 
-nginx example:
+### nginx
 
-```nginx
-location /wordcraft/ {
-    types { application/wasm wasm; text/javascript js; text/html html; font/ttf ttf; }
-    gzip_static on;   # brotli_static on; with the ngx_brotli module
-    location ~* \.(wasm|js)$ { add_header Cache-Control "public, max-age=31536000, immutable"; }
-    location ~* \.ttf$ { add_header Cache-Control "public, max-age=604800"; }
-    location ~* index\.html$ { add_header Cache-Control "no-cache"; }
-}
-```
+[`nginx/wordcraft-viewer.conf`](nginx/wordcraft-viewer.conf) (`nginx-example.conf` in the web zip)
+is a complete, commented server block for this folder: point `root` at it, set `server_name` and
+the certificate, and drop it into `/etc/nginx/conf.d/`. It
+
+- adds `application/wasm` and `font/ttf` to `mime.types`;
+- sends the `.br`/`.gz` copies with `gzip_static on;` and `brotli_static on;`. Brotli needs the
+  ngx_brotli static module (Debian/Ubuntu `libnginx-mod-http-brotli-static`); without it, delete
+  the `brotli_static` line and gzip is used;
+- caches the hashed `wordcraft-web-<hash>.js`, `wordcraft-web-<hash>_bg.wasm` and icon for a year
+  (`immutable`), `fonts/` and `egui-fonts/` for a week, and revalidates `index.html` (`no-cache`);
+- redirects plain HTTP to HTTPS (WebGPU, the clipboard and the save picker need a secure
+  context);
+- shows, commented out, the same rules under a sub-path (`location /wordcraft/` with `alias`):
+  every URL in `index.html` is relative (Trunk `public_url` is `./`), so nothing else changes.
+
+[`nginx/documents-cors.conf`](nginx/documents-cors.conf) (`nginx-documents-cors.conf` in the zip)
+is for a *different* server that hosts documents opened with `?url=`/`?src=` from another origin:
+it sends `Access-Control-Allow-Origin` for the viewer's origin, allows `GET` and `OPTIONS`
+(answering `OPTIONS` with 204), and gives `.docx` its MIME type
+`application/vnd.openxmlformats-officedocument.wordprocessingml.document` (and `.odt`, `.rtf`,
+`.doc`…). Both files pass `nginx -t` with nginx 1.26 (Debian 13), with and without the brotli
+module.
 
 Local test: `python3 -m http.server 8765` inside the folder, then open http://localhost:8765/.
 
@@ -117,8 +130,9 @@ https://example.com/wordcraft/?url=https%3A%2F%2Fcdn.example.org%2Fminutes.odt&n
 - Cookies are sent only to the viewer's own origin (`credentials: same-origin`).
 - **CORS:** a file on another origin is readable only if its server sends
   `Access-Control-Allow-Origin` naming the viewer's origin (or `*`), for example in nginx
-  `add_header Access-Control-Allow-Origin https://example.com;`. Without it the browser blocks
-  the download and the viewer says so.
+  `add_header Access-Control-Allow-Origin https://example.com;` (a full example:
+  [`nginx/documents-cors.conf`](nginx/documents-cors.conf)). Without it the browser blocks the
+  download and the viewer says so.
 - While it downloads, the viewer shows *Opening report.docx…*. A network or CORS failure, an HTTP
   error (404…) or a file WordCraft can't open is shown on the page and on the status bar and
   logged to the console. Documents larger than 512 MB are refused.

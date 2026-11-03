@@ -43,6 +43,8 @@ for f in "$WORK/$NAME"/*.wasm "$WORK/$NAME"/*.js "$WORK/$NAME"/index.html "$WORK
 done
 # Sample server configs (MIME type, caching, compression); harmless where unused.
 cp "$HERE/_headers" "$HERE/.htaccess" "$WORK/$NAME/"
+cp "$HERE/nginx/wordcraft-viewer.conf" "$WORK/$NAME/nginx-example.conf"
+cp "$HERE/nginx/documents-cors.conf" "$WORK/$NAME/nginx-documents-cors.conf"
 cp "$HERE/README.md" "$WORK/$NAME/HOSTING.md"
 copy_docs "$WORK/$NAME"
 rm -f "$DIST/$NAME.zip"
