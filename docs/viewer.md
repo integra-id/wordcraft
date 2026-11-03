@@ -78,6 +78,10 @@ history and dirty flag are unchanged.
   the ribbon, keytips, the mini toolbar, the editing context menus and every dialog but the
   viewer's (`Dialog::open_viewing`: Find/Go To, Zoom, Word Count, command search, About; plus
   password, unsaved changes and recovery). The engine's commands stay in either build.
+- Web fonts (`wordcraft-fonts` feature `fetched-fonts`, on for the wasm build): the interface
+  fonts and Source Sans 3 Regular are compiled in; the other eight bundled document faces
+  (`wordcraft_fonts::FETCHED_FILES`) are fetched from `fonts/` without holding up start-up and
+  join the font database in bundled order (`FontDb::add_fetched`), which relays documents out.
 - Screenshots: `{"viewer": true}` on the first line of a `ui_shot` script
   (`cargo run -p wordcraft-ui-egui --example ui_shot -- script.jsonl`).
 

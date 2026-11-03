@@ -13,7 +13,7 @@ HERE="$ROOT/packaging/web"
 
 if [[ "${1:-}" != "--skip-build" ]]; then
   command -v trunk >/dev/null || { echo "error: trunk not found (cargo install trunk --locked)" >&2; exit 1; }
-  # The `web` profile (Cargo.toml) builds for size: about 24 MB of wasm instead of about 44 MB.
+  # The `web` profile (Cargo.toml) builds for size: about 20 MB of wasm instead of about 44 MB.
   (cd "$ROOT/apps/wordcraft-web" && trunk build --release --cargo-profile web)
 fi
 
@@ -30,6 +30,17 @@ WORK="$CARGO_TARGET_DIR/web-package"
 rm -rf "$WORK"
 mkdir -p "$WORK/$NAME"
 cp -R "$SITE/." "$WORK/$NAME/"
+# fonts/ holds every bundled font (Trunk copies the folder), but the wasm only fetches the ones
+# index.html preloads; the others are compiled in. Keep those and the licences.
+for f in "$WORK/$NAME"/fonts/*.ttf; do
+  grep -q "href=\"fonts/$(basename "$f")\"" "$SITE/index.html" || rm "$f"
+done
+# Precompressed copies for servers that send them as they are (nginx gzip_static/brotli_static,
+# Caddy precompressed); the others ignore them. The originals stay for clients without either.
+for f in "$WORK/$NAME"/*.wasm "$WORK/$NAME"/*.js "$WORK/$NAME"/index.html "$WORK/$NAME"/fonts/*.ttf; do
+  gzip -k9n "$f"
+  if command -v brotli >/dev/null; then brotli -kq 11 "$f"; fi
+done
 # Sample server configs (MIME type, caching, compression); harmless where unused.
 cp "$HERE/_headers" "$HERE/.htaccess" "$WORK/$NAME/"
 cp "$HERE/README.md" "$WORK/$NAME/HOSTING.md"

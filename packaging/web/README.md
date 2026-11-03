@@ -7,7 +7,9 @@ static site in `wordcraft-web-<version>/`:
 |---|---|
 | `index.html` | The page. It loads everything through relative URLs. |
 | `wordcraft-web-<hash>.js` | wasm-bindgen glue (generated, ES module) |
-| `wordcraft-web-<hash>_bg.wasm` | The app, about 24 MB, or 10 MB with gzip and 7 MB with Brotli |
+| `wordcraft-web-<hash>_bg.wasm` | The app, about 20 MB, or 8.3 MB with gzip and 6.0 MB with Brotli |
+| `fonts/` | Document fonts the app fetches after it starts (Source Sans 3 bold/italic, Source Serif 4) and their licences |
+| `*.br`, `*.gz` | Precompressed copies of the files above, for servers that can send them (optional) |
 | `_headers`, `.htaccess` | Sample header rules for Netlify/Cloudflare Pages and Apache |
 
 There is no server-side code. Upload the folder's contents anywhere that serves static files.
@@ -24,11 +26,18 @@ hash, so they can be cached forever. Only `index.html` needs revalidation.
 - **MIME type:** serve `.wasm` as `application/wasm`. Browsers refuse to stream-compile it under
   any other type, and the app then loads slowly or not at all. Serve `.js` as `text/javascript`.
   Most hosts already do both. For nginx, check that `mime.types` has `application/wasm wasm;`.
-- **Compression:** turn on gzip or Brotli for `.wasm`, `.js` and `.html`. That takes the
-  download from about 24 MB to about 10 MB (gzip) or 7 MB (Brotli). You can also precompress (`brotli -k *.wasm`) and let
-  the server send `Content-Encoding: br`.
+- **Compression:** turn on gzip or Brotli for `.wasm`, `.js`, `.html` and `.ttf`. That takes the
+  download from about 22 MB to about 9.3 MB (gzip) or 6.8 MB (Brotli). The zip already holds
+  `.br` and `.gz` copies made at the highest levels, so servers that send precompressed files
+  (nginx `gzip_static on;` / `brotli_static on;`, Caddy `file_server { precompressed br gzip }`)
+  don't have to compress anything. Delete them if your host compresses on its own.
+- **Fonts:** keep `fonts/` next to `index.html`. The app starts without them, with its interface
+  fonts and Source Sans 3 Regular compiled in, then fetches the other document faces in the
+  background and lays the document out again when they arrive. If they can't be fetched,
+  bold, italic and serif text falls back to the compiled-in faces.
 - **Caching:** `Cache-Control: public, max-age=31536000, immutable` on the hashed `.wasm` and
-  `.js` files, and `no-cache` on `index.html`.
+  `.js` files, a shorter lifetime on `fonts/` (the names carry no hash), and `no-cache` on
+  `index.html`.
 - **HTTPS:** WebGPU (and the clipboard) only work in a secure context, which means `https://`
   or `http://localhost`. Over plain HTTP elsewhere, the app falls back to WebGL2.
 - **No special isolation headers:** WordCraft doesn't use `SharedArrayBuffer`, so it doesn't
@@ -40,10 +49,10 @@ nginx example:
 
 ```nginx
 location /wordcraft/ {
-    types { application/wasm wasm; text/javascript js; text/html html; }
-    gzip on;
-    gzip_types application/wasm text/javascript text/html;
+    types { application/wasm wasm; text/javascript js; text/html html; font/ttf ttf; }
+    gzip_static on;   # brotli_static on; with the ngx_brotli module
     location ~* \.(wasm|js)$ { add_header Cache-Control "public, max-age=31536000, immutable"; }
+    location ~* \.ttf$ { add_header Cache-Control "public, max-age=604800"; }
     location ~* index\.html$ { add_header Cache-Control "no-cache"; }
 }
 ```
@@ -66,7 +75,14 @@ inputs (each embeds more data when set). MB here is MiB:
 |---|---|---|---|
 | `release` profile, no wasm-opt | 60.2 MB | 16.6 MB | 9.4 MB |
 | `release` profile + `wasm-opt -Oz` (the old `trunk build --release`) | 44.1 MB | 16.2 MB | 9.4 MB |
-| `web` profile + one copy of each interface font + `wasm-opt -Oz` (now) | 24.0 MB | 10.0 MB | 6.9 MB |
+| `web` profile + one copy of each interface font + `wasm-opt -Oz` | 24.0 MB | 10.0 MB | 6.9 MB |
+| + viewer only (no `editor` feature), document fonts fetched (now) | 19.9 MB | 8.3 MB | 6.0 MB |
+
+The web build is the WordCraft Viewer: it depends on `wordcraft-ui-egui` without its default
+`editor` feature, so the editing dialogs and commands are compiled out (`docs/viewer.md`). Eight
+document faces (about 2.2 MB, 0.8 MB with Brotli) are not in the wasm; the app fetches them from
+`fonts/` after it starts (`index.html` preloads them), so they don't hold up the first frame.
+With them the whole download is 22.3 MB raw, 9.3 MB gzip, 6.8 MB Brotli.
 
 Fat LTO with one codegen unit makes the final link slower (a clean `web` build of the wasm took
 about 3.5 minutes on 8 cores), while `wasm-opt -Oz` gets faster (about 30 s instead of about
