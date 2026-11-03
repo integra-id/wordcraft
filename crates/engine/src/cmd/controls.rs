@@ -24,25 +24,25 @@ pub fn specs() -> Vec<CommandSpec> {
     const INSERT: &str = r#"{"title"?: string, "tag"?: string}"#;
     const LIST: &str = r#"{"title"?: string, "tag"?: string, "items"?: [string | {"display": string, "value"?: string}]}"#;
     vec![
-        CommandSpec::new("developer.richText", "Rich Text Content Control", LOC, |s, v| insert(s, v, ControlKind::RichText)).params(INSERT),
-        CommandSpec::new("developer.plainText", "Plain Text Content Control", LOC, |s, v| insert(s, v, ControlKind::Text { multi_line: false }))
+        spec!("developer.richText", "Rich Text Content Control", LOC, |s, v| insert(s, v, ControlKind::RichText)).params(INSERT),
+        spec!("developer.plainText", "Plain Text Content Control", LOC, |s, v| insert(s, v, ControlKind::Text { multi_line: false }))
             .params(INSERT),
-        CommandSpec::new("developer.picture", "Picture Content Control", LOC, |s, v| insert(s, v, ControlKind::Picture)).params(INSERT),
-        CommandSpec::new("developer.buildingBlock", "Building Block Gallery Content Control", LOC, |s, v| {
+        spec!("developer.picture", "Picture Content Control", LOC, |s, v| insert(s, v, ControlKind::Picture)).params(INSERT),
+        spec!("developer.buildingBlock", "Building Block Gallery Content Control", LOC, |s, v| {
             insert(s, v, ControlKind::Gallery { list: true, gallery: "Quick Parts".into(), category: "General".into(), unique: false })
         })
         .params(INSERT),
-        CommandSpec::new("developer.checkBox", "Check Box Content Control", LOC, |s, v| insert(s, v, ControlKind::check_box()))
+        spec!("developer.checkBox", "Check Box Content Control", LOC, |s, v| insert(s, v, ControlKind::check_box()))
             .params(r#"{"title"?: string, "tag"?: string, "checked"?: bool}"#),
-        CommandSpec::new("developer.comboBox", "Combo Box Content Control", LOC, |s, v| {
+        spec!("developer.comboBox", "Combo Box Content Control", LOC, |s, v| {
             insert(s, v, ControlKind::ComboBox { items: Vec::new(), last_value: String::new() })
         })
         .params(LIST),
-        CommandSpec::new("developer.dropDown", "Drop-Down List Content Control", LOC, |s, v| {
+        spec!("developer.dropDown", "Drop-Down List Content Control", LOC, |s, v| {
             insert(s, v, ControlKind::DropDown { items: Vec::new(), last_value: String::new() })
         })
         .params(LIST),
-        CommandSpec::new("developer.datePicker", "Date Picker Content Control", LOC, |s, v| {
+        spec!("developer.datePicker", "Date Picker Content Control", LOC, |s, v| {
             insert(
                 s,
                 v,
@@ -50,20 +50,20 @@ pub fn specs() -> Vec<CommandSpec> {
             )
         })
         .params(r#"{"title"?: string, "tag"?: string, "format"?: "M/d/yyyy", "date"?: "YYYY-MM-DD"}"#),
-        CommandSpec::new("developer.repeatingSection", "Repeating Section Content Control", LOC, |s, v| {
+        spec!("developer.repeatingSection", "Repeating Section Content Control", LOC, |s, v| {
             insert(s, v, ControlKind::RepeatingSection { title: String::new(), no_insert_delete: false })
         })
         .params(INSERT),
-        CommandSpec::new("developer.designMode", "Design Mode", LOC, design_mode).params(r#"{"value"?: bool}"#).pure(),
-        CommandSpec::new("developer.properties", "Properties", LOC, properties).params(
+        spec!("developer.designMode", "Design Mode", LOC, design_mode).params(r#"{"value"?: bool}"#).pure(),
+        spec!("developer.properties", "Properties", LOC, properties).params(
             r#"{"control"?: tag or title, "title"?: string, "tag"?: string, "lockDelete"?: bool, "lockEdit"?: bool, "temporary"?: bool, "multiLine"?: bool, "placeholder"?: string, "items"?: [string | {"display", "value"}], "format"?: "M/d/yyyy", "checkedSymbol"?: char, "uncheckedSymbol"?: char}"#,
         ),
-        CommandSpec::new("developer.control", "Content Control at Selection", LOC, info).params(r#"{"control"?: tag or title, "at"?: pos}"#).pure(),
-        CommandSpec::new("developer.toggleCheckBox", "Toggle Check Box", LOC, toggle_check_box).params(r#"{"control"?: tag or title, "at"?: pos, "value"?: bool}"#),
-        CommandSpec::new("developer.chooseItem", "Choose List Item", LOC, choose_item)
+        spec!("developer.control", "Content Control at Selection", LOC, info).params(r#"{"control"?: tag or title, "at"?: pos}"#).pure(),
+        spec!("developer.toggleCheckBox", "Toggle Check Box", LOC, toggle_check_box).params(r#"{"control"?: tag or title, "at"?: pos, "value"?: bool}"#),
+        spec!("developer.chooseItem", "Choose List Item", LOC, choose_item)
             .params(r#"{"control"?: tag or title, "at"?: pos, "index"?: number, "value"?: string, "text"?: string}"#),
-        CommandSpec::new("developer.setDate", "Set Date", LOC, set_date).params(r#"{"control"?: tag or title, "at"?: pos, "date": "YYYY-MM-DD"}"#),
-        CommandSpec::new("developer.removeControl", "Remove Content Control", LOC, remove_control).params(r#"{"control"?: tag or title, "at"?: pos}"#),
+        spec!("developer.setDate", "Set Date", LOC, set_date).params(r#"{"control"?: tag or title, "at"?: pos, "date": "YYYY-MM-DD"}"#),
+        spec!("developer.removeControl", "Remove Content Control", LOC, remove_control).params(r#"{"control"?: tag or title, "at"?: pos}"#),
     ]
 }
 

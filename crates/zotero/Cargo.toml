@@ -17,5 +17,6 @@ thiserror = { workspace = true }
 log = { workspace = true }
 
 [dev-dependencies]
+wordcraft-engine = { workspace = true, features = ["editor"] }
 wordcraft-docx = { workspace = true }
 proptest = { workspace = true }

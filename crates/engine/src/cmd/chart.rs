@@ -27,10 +27,10 @@ const DATA: &str = r#"{"categories": [string], "series": [{"name": string, "valu
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("insert.chart", "Chart", "Insert › Illustrations", insert).params(
+        spec!("insert.chart", "Chart", "Insert › Illustrations", insert).params(
             r#"{"type"?: "column|columnStacked|bar|barStacked|line|area|pie|doughnut|scatter", "data"?: {"categories": [string], "series": [{"name": string, "values": [number|null]}]}, "title"?: string, "legend"?: "right|left|top|bottom|none", "dataLabels"?: bool, "width"?: pt, "height"?: pt} (no params: the chart type picker)"#,
         ),
-        CommandSpec::new("chart.type", "Change Chart Type", "Chart Design › Type", |s, v| {
+        spec!("chart.type", "Change Chart Type", "Chart Design › Type", |s, v| {
             let kind = chart_type(v)?.ok_or_else(|| CmdError::Params(format!("`type` is required: {TYPES}")))?;
             edit(s, |c| {
                 c.kind = kind;
@@ -39,7 +39,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"type": "column|columnStacked|bar|barStacked|line|area|pie|doughnut|scatter"}"#)
         .when(has_chart),
-        CommandSpec::new("chart.editData", "Edit Data", "Chart Design › Data", |s, v| {
+        spec!("chart.editData", "Edit Data", "Chart Design › Data", |s, v| {
             let d = v.get("data").unwrap_or(v);
             let (cats, series) = (d.get("categories"), d.get("series"));
             if cats.is_none() && series.is_none() {
@@ -59,7 +59,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"data": {"categories"?: [string], "series"?: [{"name": string, "values": [number|null]}]}}"#)
         .when(has_chart),
-        CommandSpec::new("chart.title", "Chart Title", "Chart Design › Chart Layouts › Add Chart Element", |s, v| {
+        spec!("chart.title", "Chart Title", "Chart Design › Chart Layouts › Add Chart Element", |s, v| {
             let text = match v.get("text") {
                 Some(Value::String(t)) => Some(Some(t.clone())),
                 Some(Value::Null) => Some(None),
@@ -78,7 +78,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"text"?: string|null} (no text: switch the title on or off)"#)
         .when(has_chart),
-        CommandSpec::new("chart.legend", "Legend", "Chart Design › Chart Layouts › Add Chart Element", |s, v| {
+        spec!("chart.legend", "Legend", "Chart Design › Chart Layouts › Add Chart Element", |s, v| {
             let pos = match p::str(v, "pos").or_else(|| p::str(v, "position")) {
                 Some(id) if id.eq_ignore_ascii_case("none") => Some(None),
                 Some(id) => Some(Some(LegendPos::from_id(id).ok_or_else(|| CmdError::Params("`pos`: right|left|top|bottom|none".into()))?)),
@@ -95,7 +95,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"pos"?: "right|left|top|bottom|none"} (no pos: switch the legend on or off)"#)
         .when(has_chart),
-        CommandSpec::new("chart.dataLabels", "Data Labels", "Chart Design › Chart Layouts › Add Chart Element", |s, v| {
+        spec!("chart.dataLabels", "Data Labels", "Chart Design › Chart Layouts › Add Chart Element", |s, v| {
             let on = p::bool(v, "on").or_else(|| p::bool(v, "value"));
             edit(s, move |c| {
                 c.data_labels = on.unwrap_or(!c.data_labels);

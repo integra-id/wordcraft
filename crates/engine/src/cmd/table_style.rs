@@ -59,10 +59,10 @@ macro_rules! style_params {
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("table.newStyle", "New Table Style", "Table Design › Table Styles", new_style).params(style_params!(r#""name": string"#)),
-        CommandSpec::new("table.modifyStyle", "Modify Table Style", "Table Design › Table Styles", modify_style)
+        spec!("table.newStyle", "New Table Style", "Table Design › Table Styles", new_style).params(style_params!(r#""name": string"#)),
+        spec!("table.modifyStyle", "Modify Table Style", "Table Design › Table Styles", modify_style)
             .params(style_params!(r#""style"?: string (default: the current table's), "name"?: string"#)),
-        CommandSpec::new("table.deleteStyle", "Delete Table Style", "Table Design › Table Styles", delete_style)
+        spec!("table.deleteStyle", "Delete Table Style", "Table Design › Table Styles", delete_style)
             .params(r#"{"style"?: string (default: the current table's)}"#),
     ]
 }

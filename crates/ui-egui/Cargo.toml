@@ -11,8 +11,9 @@ workspace = true
 [features]
 default = ["editor"]
 # The editing interface: the ribbon, the editing dialogs, the mini toolbar, keytips … Without it
-# the app is always the WordCraft Viewer (`viewer::EDITOR`), and the build leaves that code out.
-editor = []
+# the app is always the WordCraft Viewer (`viewer::EDITOR`), and the build leaves that code out,
+# with the engine's editing command handlers.
+editor = ["wordcraft-engine/editor"]
 
 [dependencies]
 craft-ui = { git = "https://github.com/storytold/craft-libs", rev = "92d392cff132eaf53e13afff77f38b5c11b73aa0" }
@@ -60,7 +61,7 @@ js-sys = "0.3"
 cfb = { workspace = true }
 # Producer tests simulate a globally exhausted IME revision allocator through the engine's
 # explicit test-support feature; production builds of this crate never enable it.
-wordcraft-engine = { workspace = true, features = ["test-support"] }
+wordcraft-engine = { workspace = true, features = ["editor", "test-support"] }
 # kittest's own dev-dependencies do not propagate their font features. Declare the fonts the
 # interface tests lay out explicitly: default faces plus monochrome emoji fallbacks.
 egui = { workspace = true, features = ["default_fonts", "monochrome_emoji_fonts"] }

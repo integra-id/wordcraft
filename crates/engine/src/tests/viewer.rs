@@ -161,3 +161,30 @@ fn viewer_opens_and_exports() {
     }
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// [`viewer::VIEWER_COMMANDS`] is exactly what viewer mode runs, so a build without the `editor`
+/// feature keeps every handler the viewer needs and no other.
+#[test]
+fn viewer_commands_are_the_ones_viewer_mode_runs() {
+    let reg = cmd::registry();
+    let runs: std::collections::BTreeSet<&str> = reg.all().iter().filter(|s| viewer::refuses(s.id, s.mutates).is_none()).map(|s| s.id).collect();
+    let listed: std::collections::BTreeSet<&str> = viewer::VIEWER_COMMANDS.iter().copied().collect();
+    assert_eq!(listed.len(), viewer::VIEWER_COMMANDS.len(), "an id is listed twice");
+    assert_eq!(listed, runs, "update viewer::VIEWER_COMMANDS");
+    assert!(viewer::builds("edit.copy") && viewer::builds("file.exportPdf"));
+    assert_eq!(viewer::builds("text.insert"), viewer::EDITOR);
+}
+
+/// In a build without the `editor` feature an editing command is still registered, and refuses
+/// even outside viewer mode.
+#[test]
+fn editing_commands_refuse_without_the_editor_feature() {
+    let mut s = Session::new(crate::sample::sample_document());
+    let r = s.run("text.insert", &json!({"text": "x"}));
+    if viewer::EDITOR {
+        assert!(r.is_ok(), "{r:?}");
+    } else {
+        assert!(matches!(r, Err(CmdError::Disabled(ref m)) if m.contains(viewer::REASON)), "{r:?}");
+        assert!(cmd::registry().get("text.insert").is_some());
+    }
+}

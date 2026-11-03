@@ -41,14 +41,14 @@ fn in_table(s: &Session) -> Option<&'static str> {
 pub fn specs() -> Vec<CommandSpec> {
     let t = |c: CommandSpec| c.when(in_table);
     vec![
-        t(CommandSpec::new("table.insertRowAbove", "Insert Above", "Table Layout › Rows & Columns", |s, _| row(s, false))),
-        t(CommandSpec::new("table.insertRowBelow", "Insert Below", "Table Layout › Rows & Columns", |s, _| row(s, true))),
-        t(CommandSpec::new("table.insertColumnLeft", "Insert Left", "Table Layout › Rows & Columns", |s, _| col(s, false))),
-        t(CommandSpec::new("table.insertColumnRight", "Insert Right", "Table Layout › Rows & Columns", |s, _| col(s, true))),
-        t(CommandSpec::new("table.deleteRow", "Delete Rows", "Table Layout › Rows & Columns › Delete", del_row)),
-        t(CommandSpec::new("table.deleteColumn", "Delete Columns", "Table Layout › Rows & Columns › Delete", del_col)),
-        t(CommandSpec::new("table.deleteTable", "Delete Table", "Table Layout › Rows & Columns › Delete", del_table)),
-        t(CommandSpec::new("table.deleteCells", "Delete Cells", "Table Layout › Rows & Columns › Delete", |s, _| {
+        t(spec!("table.insertRowAbove", "Insert Above", "Table Layout › Rows & Columns", |s, _| row(s, false))),
+        t(spec!("table.insertRowBelow", "Insert Below", "Table Layout › Rows & Columns", |s, _| row(s, true))),
+        t(spec!("table.insertColumnLeft", "Insert Left", "Table Layout › Rows & Columns", |s, _| col(s, false))),
+        t(spec!("table.insertColumnRight", "Insert Right", "Table Layout › Rows & Columns", |s, _| col(s, true))),
+        t(spec!("table.deleteRow", "Delete Rows", "Table Layout › Rows & Columns › Delete", del_row)),
+        t(spec!("table.deleteColumn", "Delete Columns", "Table Layout › Rows & Columns › Delete", del_col)),
+        t(spec!("table.deleteTable", "Delete Table", "Table Layout › Rows & Columns › Delete", del_table)),
+        t(spec!("table.deleteCells", "Delete Cells", "Table Layout › Rows & Columns › Delete", |s, _| {
             let (tp, r, c) = cell(s)?;
             let story = s.sel.focus.story;
             // A row's last cell stays.
@@ -66,17 +66,17 @@ pub fn specs() -> Vec<CommandSpec> {
             }
             fix_caret(s, &tp, r, 0)
         })),
-        t(CommandSpec::new("table.merge", "Merge Cells", "Table Layout › Merge", merge)),
-        t(CommandSpec::new("table.split", "Split Cells", "Table Layout › Merge", split)
+        t(spec!("table.merge", "Merge Cells", "Table Layout › Merge", merge)),
+        t(spec!("table.split", "Split Cells", "Table Layout › Merge", split)
             .params(r#"{"columns"?: n (2), "rows"?: n (1), "mergeFirst"?: bool (true: several selected cells are merged first)}"#)),
-        t(CommandSpec::new("table.splitTable", "Split Table", "Table Layout › Merge", split_table)),
-        t(CommandSpec::new("table.style", "Table Styles", "Table Design › Table Styles", |s, v| {
+        t(spec!("table.splitTable", "Split Table", "Table Layout › Merge", split_table)),
+        t(spec!("table.style", "Table Styles", "Table Design › Table Styles", |s, v| {
             let st = p::req_str(v, "style")?;
             let id = super::table_style::table_style_id(s, st).ok_or_else(|| CmdError::Params(format!("no table style `{st}`")))?;
             with_table(s, |t| t.props.style = Some(id.clone()))
         })
         .params(r#"{"style": string}"#)),
-        t(CommandSpec::new("table.look", "Table Style Options", "Table Design › Table Style Options", |s, v| {
+        t(spec!("table.look", "Table Style Options", "Table Design › Table Style Options", |s, v| {
             let set = |k: &str, cur: bool| p::bool(v, k).unwrap_or(cur);
             with_table(s, |t| {
                 let l = &mut t.props.look;
@@ -91,14 +91,14 @@ pub fn specs() -> Vec<CommandSpec> {
         .params(
             r#"{"headerRow"?: bool, "totalRow"?: bool, "bandedRows"?: bool, "firstColumn"?: bool, "lastColumn"?: bool, "bandedColumns"?: bool}"#,
         )),
-        t(CommandSpec::new("table.shading", "Shading", "Table Design › Table Styles", |s, v| {
+        t(spec!("table.shading", "Shading", "Table Design › Table Styles", |s, v| {
             let c = p::str(v, "color").and_then(Rgb::parse);
             with_cells(s, |cl| cl.props.shading = c)
         })
         .params(r#"{"color": "RRGGBB" | null}"#)),
-        t(CommandSpec::new("table.borders", "Borders", "Table Design › Borders", borders)
+        t(spec!("table.borders", "Borders", "Table Design › Borders", borders)
             .params(r#"{"kind": "all|outside|inside|none|top|bottom|left|right", "width"?: pt, "color"?: "RRGGBB"}"#)),
-        t(CommandSpec::new("table.cellAlign", "Alignment", "Table Layout › Alignment", |s, v| {
+        t(spec!("table.cellAlign", "Alignment", "Table Layout › Alignment", |s, v| {
             let (h, va) = match p::str(v, "value").unwrap_or("topLeft") {
                 "topLeft" => (Align::Left, VAlign::Top),
                 "topCenter" => (Align::Center, VAlign::Top),
@@ -122,10 +122,10 @@ pub fn specs() -> Vec<CommandSpec> {
             })
         })
         .params(r#"{"value": "topLeft|topCenter|…|bottomRight"}"#)),
-        t(CommandSpec::new("table.textDirection", "Text Direction", "Table Layout › Alignment", text_direction)
+        t(spec!("table.textDirection", "Text Direction", "Table Layout › Alignment", text_direction)
             .params(r#"{"value"?: "horizontal|down|up"} (default: the next direction after the caret cell's, like Word's button)"#)),
-        t(CommandSpec::new("table.autofit", "AutoFit", "Table Layout › Cell Size", autofit).params(r#"{"mode": "contents|window|fixed"}"#)),
-        t(CommandSpec::new("table.distributeColumns", "Distribute Columns", "Table Layout › Cell Size", |s, _| {
+        t(spec!("table.autofit", "AutoFit", "Table Layout › Cell Size", autofit).params(r#"{"mode": "contents|window|fixed"}"#)),
+        t(spec!("table.distributeColumns", "Distribute Columns", "Table Layout › Cell Size", |s, _| {
             with_table(s, |t| {
                 let total: f32 = t.grid.iter().sum();
                 let n = t.grid.len().max(1) as f32;
@@ -133,7 +133,7 @@ pub fn specs() -> Vec<CommandSpec> {
                 sync_cell_widths(t);
             })
         })),
-        t(CommandSpec::new("table.distributeRows", "Distribute Rows", "Table Layout › Cell Size", |s, _| {
+        t(spec!("table.distributeRows", "Distribute Rows", "Table Layout › Cell Size", |s, _| {
             with_table(s, |t| {
                 let h = t.rows.iter().filter_map(|r| r.props.height).fold(0.0f32, f32::max).max(18.0);
                 for r in &mut t.rows {
@@ -141,7 +141,7 @@ pub fn specs() -> Vec<CommandSpec> {
                 }
             })
         })),
-        t(CommandSpec::new("table.columnWidth", "Table Column Width", "Table Layout › Cell Size", |s, v| {
+        t(spec!("table.columnWidth", "Table Column Width", "Table Layout › Cell Size", |s, v| {
             let w = p::req_f32(v, "width")?.clamp(6.0, 1584.0);
             let cells = selected_cells(s);
             with_table(s, |t| set_column_widths(t, &cells, w))
@@ -149,7 +149,7 @@ pub fn specs() -> Vec<CommandSpec> {
         .params(
             r#"{"width": pt} (every column the selection covers, the caret cell's without one; the table's preferred width is cleared so the columns get exactly this)"#,
         )),
-        t(CommandSpec::new("table.rowHeight", "Table Row Height", "Table Layout › Cell Size", |s, v| {
+        t(spec!("table.rowHeight", "Table Row Height", "Table Layout › Cell Size", |s, v| {
             let h = p::req_f32(v, "height")?.clamp(1.0, 1584.0);
             let rule = match p::str(v, "rule") {
                 None | Some("atLeast") => HeightRule::AtLeast,
@@ -168,7 +168,7 @@ pub fn specs() -> Vec<CommandSpec> {
             })
         })
         .params(r#"{"height": pt, "rule"?: "atLeast|exact"} (every row the selection covers, the caret's without one)"#)),
-        t(CommandSpec::new("table.repeatHeader", "Repeat Header Rows", "Table Layout › Data", |s, v| {
+        t(spec!("table.repeatHeader", "Repeat Header Rows", "Table Layout › Data", |s, v| {
             let (_, r, _) = cell(s)?;
             let on = p::bool(v, "value");
             with_table(s, |t| {
@@ -178,7 +178,7 @@ pub fn specs() -> Vec<CommandSpec> {
             })
         })),
         // Table Properties › Alt Text: the title (`w:tblCaption`) and description (`w:tblDescription`).
-        t(CommandSpec::new("table.altText", "Alt Text", "Table Layout › Table › Properties", |s, v| {
+        t(spec!("table.altText", "Alt Text", "Table Layout › Table › Properties", |s, v| {
             let (title, text) = (p::str(v, "title"), p::str(v, "text"));
             if title.is_none() && text.is_none() {
                 return Err(CmdError::Params("`text` or `title` (string) is required".into()));
@@ -194,28 +194,28 @@ pub fn specs() -> Vec<CommandSpec> {
             })
         })
         .params(r#"{"text"?: string, "title"?: string} (empty clears)"#)),
-        t(CommandSpec::new("table.sort", "Sort", "Table Layout › Data", sort_table)
+        t(spec!("table.sort", "Sort", "Table Layout › Data", sort_table)
             .params(r#"{"column"?: n, "descending"?: bool, "header"?: bool}"#)),
-        t(CommandSpec::new("table.toText", "Convert to Text", "Table Layout › Data", to_text)
+        t(spec!("table.toText", "Convert to Text", "Table Layout › Data", to_text)
             .params(r#"{"separator"?: "tab|comma|paragraph|other", "char"?: string (with other)} (the selected rows, or the whole table)"#)),
-        t(CommandSpec::new("table.formula", "Formula", "Table Layout › Data", formula).params(r#"{"formula"?: "=SUM(ABOVE)"}"#)),
-        t(CommandSpec::new("table.selectTable", "Select Table", "Table Layout › Table › Select", |s, _| {
+        t(spec!("table.formula", "Formula", "Table Layout › Data", formula).params(r#"{"formula"?: "=SUM(ABOVE)"}"#)),
+        t(spec!("table.selectTable", "Select Table", "Table Layout › Table › Select", |s, _| {
             let (tp, _, _) = cell(s)?;
             select_cells(s, &tp, None)
         })
         .pure()),
-        t(CommandSpec::new("table.selectRow", "Select Row", "Table Layout › Table › Select", |s, _| {
+        t(spec!("table.selectRow", "Select Row", "Table Layout › Table › Select", |s, _| {
             let (tp, r, _) = cell(s)?;
             select_cells(s, &tp, Some((r, None)))
         })
         .pure()),
-        t(CommandSpec::new("table.selectColumn", "Select Column", "Table Layout › Table › Select", select_column).pure()),
-        t(CommandSpec::new("table.selectCell", "Select Cell", "Table Layout › Table › Select", |s, _| {
+        t(spec!("table.selectColumn", "Select Column", "Table Layout › Table › Select", select_column).pure()),
+        t(spec!("table.selectCell", "Select Cell", "Table Layout › Table › Select", |s, _| {
             let (tp, r, c) = cell(s)?;
             select_cells(s, &tp, Some((r, Some(c))))
         })
         .pure()),
-        t(CommandSpec::new("table.rtl", "Right-to-Left Table", "Table Layout › Table", |s, v| {
+        t(spec!("table.rtl", "Right-to-Left Table", "Table Layout › Table", |s, v| {
             let (tp, _, _) = cell(s)?;
             let on = match p::bool(v, "value") {
                 Some(b) => b,
@@ -224,11 +224,11 @@ pub fn specs() -> Vec<CommandSpec> {
             with_table(s, |t| t.props.bidi_visual = on)
         })
         .params(r#"{"value"?: bool} (true: the first column stands at the right; without a value it toggles)"#)),
-        t(CommandSpec::new("table.properties", "Properties", "Table Layout › Table", properties).params(
+        t(spec!("table.properties", "Properties", "Table Layout › Table", properties).params(
             r#"{"align"?: "left|center|right", "rtl"?: bool, "width"?: pt|null, "widthPct"?: percent, "indent"?: pt, "rowHeight"?: pt|null, "rowHeightRule"?: "atLeast|exact", "allowBreak"?: bool, "headerRow"?: bool, "columnWidth"?: pt, "cellWidth"?: pt|null, "valign"?: "top|center|bottom"} (row, column and cell settings apply to the selected rows, columns and cells, or the caret's; without settings it returns the caret's current ones)"#,
         )),
-        CommandSpec::new("table.fromText", "Convert Text to Table", "Insert › Tables", from_text)
+        spec!("table.fromText", "Convert Text to Table", "Insert › Tables", from_text)
             .params(r#"{"separator"?: "tab|comma|paragraph|other", "char"?: string (with other), "columns"?: n, "autofit"?: "initial|fixed|contents|window", "width"?: pt (initial column width, 0 = Auto, at most 1584)}"#),
-        CommandSpec::new("table.quick", "Quick Tables", "Insert › Tables", quick_table).params(r#"{"kind"?: "calendar|tabular|matrix"}"#),
+        spec!("table.quick", "Quick Tables", "Insert › Tables", quick_table).params(r#"{"kind"?: "calendar|tabular|matrix"}"#),
     ]
 }

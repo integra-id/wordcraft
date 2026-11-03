@@ -77,7 +77,12 @@ history and dirty flag are unchanged.
   puts the session in viewer mode, so every editor-only branch is dead and the build leaves out
   the ribbon, keytips, the mini toolbar, the editing context menus and every dialog but the
   viewer's (`Dialog::open_viewing`: Find/Go To, Zoom, Word Count, command search, About; plus
-  password, unsaved changes and recovery). The engine's commands stay in either build.
+  password, unsaved changes and recovery).
+- The `editor` feature of `wordcraft-engine` (on for the desktop app, the CLI and the MCP
+  server; off for the web app): without it every command is still registered, but only the
+  viewer's ([`viewer::VIEWER_COMMANDS`], checked against the registry by `tests::viewer`) keep
+  their handlers. The others run `viewer::refused`, chosen at compile time by the `spec!` macro,
+  so the editing handlers aren't linked.
 - Web fonts (`wordcraft-fonts` feature `fetched-fonts`, on for the wasm build): the interface
   fonts and Source Sans 3 Regular are compiled in; the other eight bundled document faces
   (`wordcraft_fonts::FETCHED_FILES`) are fetched from `fonts/` without holding up start-up and

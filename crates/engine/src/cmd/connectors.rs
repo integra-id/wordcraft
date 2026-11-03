@@ -29,7 +29,7 @@ fn has_connector(s: &Session) -> Option<&'static str> {
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("shape.connect", "Connect Shapes", "Shape Format › Insert Shapes", connect)
+        spec!("shape.connect", "Connect Shapes", "Shape Format › Insert Shapes", connect)
             .params(
                 r#"{"start"?: end, "end"?: end}  end: {"path": [..], "off": n, "site"?: n} (glue to that body shape's connection site; nearest one when omitted) | {"x": pt, "y": pt, "page"?: n} (drag the end there: it glues to a shape's site within 12 pt, else stays free there) | null (unglue)"#,
             )

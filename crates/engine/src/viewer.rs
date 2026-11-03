@@ -91,3 +91,274 @@ pub const EDITING_NAMESPACES: &[&str] = &["mailings."];
 pub fn refuses(id: &str, mutates: bool) -> Option<&'static str> {
     (mutates || EDITING.contains(&id) || EDITING_NAMESPACES.iter().any(|ns| id.starts_with(ns))).then_some(REASON)
 }
+
+/// Whether this build registers the editing commands' handlers (the `editor` feature, on by
+/// default). Without it every command outside [`VIEWER_COMMANDS`] is still registered, so menus,
+/// shortcuts and [`refuses`] see it, but runs [`refused`]: the linker then leaves the editing
+/// handlers out (the web viewer's download).
+pub const EDITOR: bool = cfg!(feature = "editor");
+
+/// The commands viewer mode runs: every pure command not in [`EDITING`] or
+/// [`EDITING_NAMESPACES`] (`tests::viewer` checks the list against the registry). A build
+/// without the `editor` feature keeps only these commands' handlers.
+pub const VIEWER_COMMANDS: &[&str] = &[
+    // cmd::caret
+    "caret.left",
+    "caret.right",
+    "caret.up",
+    "caret.down",
+    "caret.wordLeft",
+    "caret.wordRight",
+    "caret.home",
+    "caret.end",
+    "caret.paraUp",
+    "caret.paraDown",
+    "caret.docStart",
+    "caret.docEnd",
+    "caret.pageUp",
+    "caret.pageDown",
+    "caret.set",
+    "select.all",
+    "select.range",
+    "select.word",
+    "select.sentence",
+    "select.paragraph",
+    "select.dragUnit",
+    "select.line",
+    "select.text",
+    "select.collapse",
+    // cmd::column
+    "select.column",
+    // cmd::edit
+    "edit.undoHistory",
+    "edit.copy",
+    "edit.clipboardItems",
+    "edit.deleteClipboardItem",
+    "edit.clearClipboard",
+    "edit.find",
+    "edit.advancedFind",
+    "edit.findNext",
+    "edit.findPrevious",
+    "edit.goto",
+    "edit.goBack",
+    // cmd::format
+    "format.fontDialog",
+    "format.state",
+    // cmd::font
+    "font.add",
+    "font.list",
+    "font.remove",
+    "font.loadSystem",
+    // cmd::para
+    "para.dialog",
+    "styles.list",
+    "styles.pane",
+    // cmd::lists
+    "list.get",
+    // cmd::inspector
+    "styles.inspector",
+    "styles.inspect",
+    // cmd::view
+    "view.marks",
+    "view.printLayout",
+    "view.webLayout",
+    "view.draft",
+    "view.outline",
+    "view.readMode",
+    "view.readColumnWidth",
+    "view.readTextSize",
+    "view.readLineSpacing",
+    "view.readPageColor",
+    "view.hideWhiteSpace",
+    "view.focus",
+    "view.fullScreenView",
+    "view.ruler",
+    "view.gridlines",
+    "table.viewGridlines",
+    "view.navigationPane",
+    "view.zoom",
+    "view.zoom100",
+    "view.zoomIn",
+    "view.zoomOut",
+    "view.onePage",
+    "view.multiplePages",
+    "view.pageWidth",
+    "view.darkMode",
+    "view.interfaceTheme",
+    "view.stylesPane",
+    "view.stylesPaneDock",
+    "view.commentsPane",
+    "view.accessibilityPane",
+    "view.altTextPane",
+    "view.formatShapePane",
+    "view.newWindow",
+    "view.switchWindows",
+    "view.split",
+    "view.fullScreen",
+    "view.state",
+    "view.numeral",
+    // cmd::outline
+    "outline.expand",
+    "outline.collapse",
+    "outline.toggle",
+    "outline.selectSubtree",
+    "outline.showLevel",
+    "outline.showLevel1",
+    "outline.showLevel2",
+    "outline.showLevel3",
+    "outline.showLevel4",
+    "outline.showLevel5",
+    "outline.showLevel6",
+    "outline.showLevel7",
+    "outline.showLevel8",
+    "outline.showLevel9",
+    "outline.showAll",
+    "outline.firstLineOnly",
+    "outline.showFormatting",
+    "outline.close",
+    "outline.state",
+    // cmd::insert
+    "link.targets",
+    "insert.closeHeader",
+    // cmd::equation
+    "equation.exit",
+    "equation.move",
+    "equation.get",
+    "equation.gallery",
+    // cmd::page
+    "layout.section",
+    // cmd::table
+    "table.selectTable",
+    "table.selectRow",
+    "table.selectColumn",
+    "table.selectCell",
+    // cmd::table_mouse
+    "table.selectAt",
+    // cmd::review
+    "review.nextComment",
+    "review.previousComment",
+    "review.comments",
+    "review.nextChange",
+    "review.previousChange",
+    "review.markup",
+    "review.trackingOptions",
+    "review.wordCount",
+    "review.changes",
+    "review.spelling",
+    "review.issues",
+    "review.suggestions",
+    "review.proofing",
+    "review.thesaurus",
+    // cmd::file
+    "file.open",
+    "file.saveAs",
+    "file.exportPdf",
+    "file.exportPng",
+    "file.printMarkup",
+    "file.printPdf",
+    "file.print",
+    "file.close",
+    "file.closeDocument",
+    "file.info",
+    "document.inspect",
+    "document.text",
+    "document.paragraph",
+    "document.selection",
+    "document.layout",
+    // cmd::options
+    "file.options",
+    // cmd::packs
+    "proof.packs",
+    "proof.installPack",
+    "proof.removePack",
+    // cmd::design
+    "design.themes",
+    // cmd::references
+    "references.nextFootnote",
+    "references.notes",
+    // cmd::fields
+    "view.fieldCodes",
+    "fields.next",
+    "fields.previous",
+    "fields.selected",
+    // cmd::citations
+    "references.researcher",
+    // cmd::objects
+    "select.addObject",
+    "select.objects",
+    // cmd::draw
+    "draw.select",
+    "draw.replay",
+    "review.hideInk",
+    // cmd::tools
+    "tools.search",
+    "file.accessibility",
+    "file.compatibility",
+    "file.share",
+    "hf.next",
+    "hf.previous",
+    "review.showMarkup",
+    "select.similar",
+    "select.extend",
+    "view.immersive",
+    "view.vertical",
+    "view.sideToSide",
+    // cmd::user_templates
+    "file.listTemplates",
+    // cmd::speech
+    "review.readAloud",
+    "readAloud.playPause",
+    "readAloud.next",
+    "readAloud.previous",
+    "readAloud.stop",
+    "readAloud.speed",
+    "readAloud.skipCitations",
+    "readAloud.status",
+    "caret.pastCitation",
+];
+
+/// Whether this build keeps command `id`'s handler: every command with the `editor` feature,
+/// only [`VIEWER_COMMANDS`] without it. `const` so that [`spec!`](crate::spec) decides at compile
+/// time and an editing handler is never referenced in a viewer build.
+pub const fn builds(id: &str) -> bool {
+    if EDITOR {
+        return true;
+    }
+    let mut i = 0;
+    while i < VIEWER_COMMANDS.len() {
+        if str_eq(VIEWER_COMMANDS[i], id) {
+            return true;
+        }
+        i += 1;
+    }
+    false
+}
+
+const fn str_eq(a: &str, b: &str) -> bool {
+    let (a, b) = (a.as_bytes(), b.as_bytes());
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut i = 0;
+    while i < a.len() {
+        if a[i] != b[i] {
+            return false;
+        }
+        i += 1;
+    }
+    true
+}
+
+/// The handler [`spec!`](crate::spec) registers: `run` when this build keeps it ([`builds`]),
+/// [`refused`] otherwise. Always inlined, so a handler that isn't kept is never referenced.
+#[inline(always)]
+pub const fn handler<const KEEP: bool>(
+    run: fn(&mut crate::Session, &serde_json::Value) -> crate::CmdResult,
+) -> fn(&mut crate::Session, &serde_json::Value) -> crate::CmdResult {
+    if KEEP { run } else { refused }
+}
+
+/// The handler of an editing command in a build without the `editor` feature ([`builds`]).
+pub fn refused(_: &mut crate::Session, _: &serde_json::Value) -> crate::CmdResult {
+    Err(crate::CmdError::Disabled(REASON.into()))
+}

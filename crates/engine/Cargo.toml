@@ -9,6 +9,10 @@ description = "WordCraft engine: session, selection, undo, the command registry 
 workspace = true
 
 [features]
+default = ["editor"]
+# The editing commands' handlers. Without it (the web viewer) only the viewer's commands run
+# (`viewer::VIEWER_COMMANDS`); the others are registered but refuse, and aren't linked.
+editor = []
 # Front-end producer tests need to simulate a globally exhausted IME revision allocator. It only
 # ever makes receipt classification fail closed. Never enable this for a production build; the
 # UI's dev-dependencies enable it for its tests.

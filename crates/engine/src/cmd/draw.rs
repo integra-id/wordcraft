@@ -194,18 +194,18 @@ const MAX_MOVE: f32 = 10_000.0;
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("draw.select", "Select", "Draw › Tools", |s, _| {
+        spec!("draw.select", "Select", "Draw › Tools", |s, _| {
             s.view.draw.mode = DrawMode::Select;
             state(s)
         })
         .pure(),
-        CommandSpec::new("draw.lasso", "Lasso Select", "Draw › Tools", lasso)
+        spec!("draw.lasso", "Lasso Select", "Draw › Tools", lasso)
             .params(r#"{"page"?: n, "points"?: [[x, y], …], "clear"?: bool}  (no points: use the lasso; points: select the ink inside that loop; clear: drop the selection)"#)
             .pure(),
-        CommandSpec::new("draw.lassoMove", "Move Selected Ink", "Draw › Tools", lasso_move).params(r#"{"dx": pt, "dy": pt}"#),
-        CommandSpec::new("draw.lassoDelete", "Delete Selected Ink", "Draw › Tools", lasso_delete),
-        CommandSpec::new("draw.lassoColor", "Recolor Selected Ink", "Draw › Tools", lasso_color).params(r#"{"color": "RRGGBB"}"#),
-        CommandSpec::new("draw.eraser", "Eraser", "Draw › Tools", |s, v| {
+        spec!("draw.lassoMove", "Move Selected Ink", "Draw › Tools", lasso_move).params(r#"{"dx": pt, "dy": pt}"#),
+        spec!("draw.lassoDelete", "Delete Selected Ink", "Draw › Tools", lasso_delete),
+        spec!("draw.lassoColor", "Recolor Selected Ink", "Draw › Tools", lasso_color).params(r#"{"color": "RRGGBB"}"#),
+        spec!("draw.eraser", "Eraser", "Draw › Tools", |s, v| {
             // With a point, erase there (as a script would); without, pick up the eraser.
             if v.get("page").is_some() || v.get("x").is_some() || v.get("y").is_some() {
                 return s.run("draw.erase", v);
@@ -215,13 +215,13 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"page"?: n, "x"?: pt, "y"?: pt}  (no point: use the eraser; a point: delete the ink stroke there)"#)
         .pure(),
-        CommandSpec::new("draw.pen", "Pen", "Draw › Pens", |s, v| pen(s, v, InkTool::Pen)).params(PEN_PARAMS).pure(),
-        CommandSpec::new("draw.pencil", "Pencil", "Draw › Pens", |s, v| pen(s, v, InkTool::Pencil)).params(PEN_PARAMS).pure(),
-        CommandSpec::new("draw.highlighter", "Highlighter", "Draw › Pens", |s, v| pen(s, v, InkTool::Highlighter)).params(PEN_PARAMS).pure(),
-        CommandSpec::new("draw.addPen", "Add Pen", "Draw › Pens", add_pen)
+        spec!("draw.pen", "Pen", "Draw › Pens", |s, v| pen(s, v, InkTool::Pen)).params(PEN_PARAMS).pure(),
+        spec!("draw.pencil", "Pencil", "Draw › Pens", |s, v| pen(s, v, InkTool::Pencil)).params(PEN_PARAMS).pure(),
+        spec!("draw.highlighter", "Highlighter", "Draw › Pens", |s, v| pen(s, v, InkTool::Highlighter)).params(PEN_PARAMS).pure(),
+        spec!("draw.addPen", "Add Pen", "Draw › Pens", add_pen)
             .params(r#"{"kind"?: "pen|pencil|highlighter", "color"?: "RRGGBB", "width"?: pt}  (adds the pen to the gallery and picks it up)"#)
             .pure(),
-        CommandSpec::new("draw.removePen", "Remove Pen", "Draw › Pens", |s, v| {
+        spec!("draw.removePen", "Remove Pen", "Draw › Pens", |s, v| {
             let i = p::u64(v, "index").and_then(|i| usize::try_from(i).ok()).ok_or_else(|| CmdError::Params("`index` (0-based) is required".into()))?;
             if i >= s.view.draw.pens.len() {
                 return Err(CmdError::Params(format!("no pen {i}")));
@@ -231,11 +231,11 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"index": n}"#)
         .pure(),
-        CommandSpec::new("draw.stroke", "Draw Ink", "Draw › Pens", stroke).params(
+        spec!("draw.stroke", "Draw Ink", "Draw › Pens", stroke).params(
             r#"{"page": n, "points": [[x, y], …] (page points, at most 5000), "tool"?: "pen|pencil|highlighter", "color"?: "RRGGBB", "width"?: pt}"#,
         ),
-        CommandSpec::new("draw.erase", "Erase Ink", "Draw › Tools", erase).params(r#"{"page": n, "x": pt, "y": pt}"#),
-        CommandSpec::new("draw.inkToShape", "Ink to Shape", "Draw › Convert", |s, v| {
+        spec!("draw.erase", "Erase Ink", "Draw › Tools", erase).params(r#"{"page": n, "x": pt, "y": pt}"#),
+        spec!("draw.inkToShape", "Ink to Shape", "Draw › Convert", |s, v| {
             if let Some(on) = p::bool(v, "value") {
                 s.view.draw.ink_to_shape = on;
                 return Ok(json!({"value": on}));
@@ -250,11 +250,11 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"value"?: bool}  (no value: convert the lasso-selected strokes, or turn Ink to Shape on or off)"#)
         .pure(),
-        CommandSpec::new("draw.convertInk", "Convert to Shapes", "Draw › Convert", convert_selection),
-        CommandSpec::new("draw.replay", "Ink Replay", "Draw › Replay", replay)
+        spec!("draw.convertInk", "Convert to Shapes", "Draw › Convert", convert_selection),
+        spec!("draw.replay", "Ink Replay", "Draw › Replay", replay)
             .params(r#"{"value"?: bool}  (starts or stops Ink Replay; returns the strokes in the order they were drawn)"#)
             .pure(),
-        CommandSpec::new("review.hideInk", "Hide Ink", "Review › Ink", |s, v| {
+        spec!("review.hideInk", "Hide Ink", "Review › Ink", |s, v| {
             s.view.hide_ink = p::bool(v, "value").unwrap_or(!s.view.hide_ink);
             Ok(json!({"value": s.view.hide_ink}))
         })

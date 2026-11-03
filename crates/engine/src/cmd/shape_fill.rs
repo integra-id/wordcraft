@@ -19,7 +19,7 @@ const MAX_PARAM_STOPS: usize = 64;
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("shape.fill", "Shape Fill", "Shape Format › Shape Styles", shape_fill)
+        spec!("shape.fill", "Shape Fill", "Shape Format › Shape Styles", shape_fill)
             .params(
                 r#"{"color": "RRGGBB" | null, "transparency"?: %} | {"gradient": {"stops": [{"pos": %, "color": "RRGGBB", "transparency"?: %}], "type"?: "linear|radial|rectangular|path", "angle"?: deg, "focus"?: [l, t, r, b], "tile"?: [l, t, r, b], "scaled"?: bool, "rotateWithShape"?: bool}}  (tile: percent insets of the gradient's area; scaled: a linear angle scaled with the shape; a colour alone keeps the shape's transparency; angle: linear only, 0 = left to right, 90 = top to bottom; focus: percent insets of where a radial, rectangular or path gradient starts; applies to every selected shape, text box and canvas background)"#,
             )

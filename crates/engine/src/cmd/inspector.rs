@@ -19,7 +19,7 @@ const PARA_SKIP: [&str; 4] = ["style", "numbering", "numChange", "fmtChange"];
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("styles.inspector", "Style Inspector", "Home › Styles", |s, v| {
+        spec!("styles.inspector", "Style Inspector", "Home › Styles", |s, v| {
             s.view.style_inspector = p::bool(v, "value").unwrap_or(!s.view.style_inspector);
             let mut out = inspect(s);
             if let Value::Object(m) = &mut out {
@@ -30,8 +30,8 @@ pub fn specs() -> Vec<CommandSpec> {
         .params(r#"{"value"?: bool (show/hide the pane)}"#)
         .key("Shift+F1")
         .pure(),
-        CommandSpec::new("styles.inspect", "Inspect Styles at Selection", "Home › Styles › Style Inspector", |s, _| Ok(inspect(s))).pure(),
-        CommandSpec::new("styles.inspectorClear", "Clear Formatting Level", "Home › Styles › Style Inspector", clear)
+        spec!("styles.inspect", "Inspect Styles at Selection", "Home › Styles › Style Inspector", |s, _| Ok(inspect(s))).pure(),
+        spec!("styles.inspectorClear", "Clear Formatting Level", "Home › Styles › Style Inspector", clear)
             .params(r#"{"level": "paragraphStyle|paragraphFormatting|characterStyle|characterFormatting"}"#),
     ]
 }

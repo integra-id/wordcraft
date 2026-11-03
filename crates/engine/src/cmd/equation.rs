@@ -25,32 +25,32 @@ fn near_equation(s: &Session) -> Option<&'static str> {
 /// normal text, display, justification, numbering, set and get, gallery and structure actions.
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("insert.equation", "Equation", "Insert › Symbols", insert)
+        spec!("insert.equation", "Equation", "Insert › Symbols", insert)
             .key("Alt+=")
             .params(r#"{"linear"?: string, "latex"?: string, "builtin"?: "pythagoras|area|quadratic|binomial|expansion|euler|derivative|taylor|gaussian|fourier|trig1|trig2|normal|bayes", "display"?: bool, "edit"?: bool (default true)}"#),
-        CommandSpec::new("equation.edit", "Edit Equation", "Equation", edit)
+        spec!("equation.edit", "Edit Equation", "Equation", edit)
             .pure()
             .when(near_equation)
             .params(r#"{"pos"?: {"path": [[node, child]…], "off": n}}"#),
-        CommandSpec::new("equation.exit", "Leave Equation", "Equation", exit).pure().when(editing).params(r#"{"before"?: bool}"#),
-        CommandSpec::new("equation.type", "Type in Equation", "Equation", type_text).when(editing).params(r#"{"text": string}"#),
-        CommandSpec::new("equation.insertStructure", "Insert Structure", "Equation › Structures", insert_structure)
+        spec!("equation.exit", "Leave Equation", "Equation", exit).pure().when(editing).params(r#"{"before"?: bool}"#),
+        spec!("equation.type", "Type in Equation", "Equation", type_text).when(editing).params(r#"{"text": string}"#),
+        spec!("equation.insertStructure", "Insert Structure", "Equation › Structures", insert_structure)
             .params(r#"{"id"?: string (see equation.gallery), "linear"?: string, "latex"?: string}"#),
-        CommandSpec::new("equation.insertSymbol", "Insert Symbol", "Equation › Symbols", insert_symbol).params(r#"{"char": string}"#),
-        CommandSpec::new("equation.move", "Move in Equation", "Equation", move_caret)
+        spec!("equation.insertSymbol", "Insert Symbol", "Equation › Symbols", insert_symbol).params(r#"{"char": string}"#),
+        spec!("equation.move", "Move in Equation", "Equation", move_caret)
             .pure()
             .when(editing)
             .params(r#"{"dir": "left|right|up|down|home|end|next|prev"}"#),
-        CommandSpec::new("equation.backspace", "Delete Back in Equation", "Equation", |s, _| delete(s, true)).when(editing),
-        CommandSpec::new("equation.delete", "Delete in Equation", "Equation", |s, _| delete(s, false)).when(editing),
-        CommandSpec::new("equation.deleteSurrounding", "Delete Around Caret in Equation", "Equation", delete_surrounding)
+        spec!("equation.backspace", "Delete Back in Equation", "Equation", |s, _| delete(s, true)).when(editing),
+        spec!("equation.delete", "Delete in Equation", "Equation", |s, _| delete(s, false)).when(editing),
+        spec!("equation.deleteSurrounding", "Delete Around Caret in Equation", "Equation", delete_surrounding)
             .when(editing)
             .params(r#"{"before": n, "after": n}"#),
-        CommandSpec::new("equation.enter", "Enter in Equation", "Equation", enter).when(editing),
-        CommandSpec::new("equation.convert", "Convert", "Equation › Conversions", convert)
+        spec!("equation.enter", "Enter in Equation", "Equation", enter).when(editing),
+        spec!("equation.convert", "Convert", "Equation › Conversions", convert)
             .when(near_equation_or_all)
             .params(r#"{"to": "professional|linear", "all"?: bool}"#),
-        CommandSpec::new("equation.inputFormat", "Input Format", "Equation › Conversions", |s, v| {
+        spec!("equation.inputFormat", "Input Format", "Equation › Conversions", |s, v| {
             if let Some(f) = p::str(v, "format") {
                 s.math_latex = f.eq_ignore_ascii_case("latex");
             }
@@ -58,22 +58,22 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .pure()
         .params(r#"{"format": "unicode|latex"}"#),
-        CommandSpec::new("equation.normalText", "Normal Text", "Equation › Tools", |s, v| {
+        spec!("equation.normalText", "Normal Text", "Equation › Tools", |s, v| {
             s.math_normal_text = p::bool(v, "value").unwrap_or(!s.math_normal_text);
             Ok(json!({"normalText": s.math_normal_text}))
         })
         .pure()
         .params(r#"{"value"?: bool}"#),
-        CommandSpec::new("equation.display", "Change to Display", "Equation", set_display).when(near_equation).params(r#"{"value"?: bool}"#),
-        CommandSpec::new("equation.justify", "Justification", "Equation", justify)
+        spec!("equation.display", "Change to Display", "Equation", set_display).when(near_equation).params(r#"{"value"?: bool}"#),
+        spec!("equation.justify", "Justification", "Equation", justify)
             .when(near_equation)
             .params(r#"{"jc": "centerGroup|center|left|right"}"#),
-        CommandSpec::new("equation.number", "Equation Number", "Equation", number).when(near_equation).params(r#"{"value"?: bool}"#),
-        CommandSpec::new("equation.set", "Set Equation", "Equation", set).when(near_equation).params(r#"{"linear"?: string, "latex"?: string}"#),
-        CommandSpec::new("equation.get", "Equation Info", "Equation", get).pure().when(near_equation),
-        CommandSpec::new("equation.gallery", "Equation Gallery", "Equation › Structures", gallery).pure(),
-        CommandSpec::new("equation.structureActions", "Structure Actions", "Equation", structure_actions).pure().when(editing),
-        CommandSpec::new("equation.structure", "Change Structure", "Equation", structure)
+        spec!("equation.number", "Equation Number", "Equation", number).when(near_equation).params(r#"{"value"?: bool}"#),
+        spec!("equation.set", "Set Equation", "Equation", set).when(near_equation).params(r#"{"linear"?: string, "latex"?: string}"#),
+        spec!("equation.get", "Equation Info", "Equation", get).pure().when(near_equation),
+        spec!("equation.gallery", "Equation Gallery", "Equation › Structures", gallery).pure(),
+        spec!("equation.structureActions", "Structure Actions", "Equation", structure_actions).pure().when(editing),
+        spec!("equation.structure", "Change Structure", "Equation", structure)
             .when(editing)
             .params(r#"{"action": string (see equation.structureActions), "level"?: n}"#),
     ]

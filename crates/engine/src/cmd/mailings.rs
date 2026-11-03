@@ -61,7 +61,7 @@ pub const MERGE_KINDS: [&str; 6] = ["letters", "emails", "envelopes", "labels", 
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("mailings.start", "Start Mail Merge", "Mailings › Start Mail Merge", |s, v| {
+        spec!("mailings.start", "Start Mail Merge", "Mailings › Start Mail Merge", |s, v| {
             let kind = p::str(v, "kind").unwrap_or("letters").trim().to_ascii_lowercase();
             if !MERGE_KINDS.contains(&kind.as_str()) {
                 return Err(CmdError::Params(format!("`kind` must be one of {}", MERGE_KINDS.join(", "))));
@@ -71,10 +71,10 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"kind": "letters|emails|envelopes|labels|directory|normal"}"#)
         .pure(),
-        CommandSpec::new("mailings.recipients", "Select Recipients", "Mailings › Start Mail Merge", recipients)
+        spec!("mailings.recipients", "Select Recipients", "Mailings › Start Mail Merge", recipients)
             .params(r#"{"csv"?: string, "path"?: string (.csv/.tsv/.txt, or a .xlsx/.xlsm/.xls/.ods workbook), "data"?: base64 (a file's bytes, as for path), "encoding"?: string (a text list's encoding, e.g. "gbk", "big5", "shift_jis", "utf-16le"; default: detected), "sheet"?: name | number (1 = first; a workbook with several sheets and no sheet answers {"sheets": [...], "chooseSheet": true} and loads nothing), "headers"?: bool (default true: the first non-blank row names the fields; false: fields are Column 1…N), "rows"?: [{field: value}] | [[value]], "fields"?: [string] (column order; required with array rows)}"#)
             .pure(),
-        CommandSpec::new("mailings.editRecipients", "Edit Recipient List", "Mailings › Start Mail Merge", |s, v| {
+        spec!("mailings.editRecipients", "Edit Recipient List", "Mailings › Start Mail Merge", |s, v| {
             if v.get("rows").and_then(Value::as_array).is_some() {
                 // Edited records keep the list's filter and sort (rules on removed fields drop).
                 // Copies, so a list that fails to load leaves the filter and sort as they were.
@@ -97,7 +97,7 @@ pub fn specs() -> Vec<CommandSpec> {
         .key(super::non_mac("Alt+Shift+E"))
         .when(has_list)
         .pure(),
-        CommandSpec::new("mailings.filterRecipients", "Filter Recipients", "Mailings › Start Mail Merge › Edit Recipient List", |s, v| {
+        spec!("mailings.filterRecipients", "Filter Recipients", "Mailings › Start Mail Merge › Edit Recipient List", |s, v| {
             let filter = parse_rules(&s.merge.headers, v.get("rules"))?;
             let sort = match v.get("sort") {
                 Some(x) => parse_sort(&s.merge.headers, Some(x))?,
@@ -112,7 +112,7 @@ pub fn specs() -> Vec<CommandSpec> {
         .params(r#"{"rules"?: [{"field": string, "op": "equal|notEqual|less|greater|lessOrEqual|greaterOrEqual|blank|notBlank|contains|notContains", "value"?: string, "join"?: "and|or" (with the rule before; And binds tighter)}], "sort"?: [{"field": string, "descending"?: bool}]} (replaces the filter; `sort` too when given; {} clears both). Preview, Finish & Merge and labels use only the matching records, in sort order"#)
         .when(has_list)
         .pure(),
-        CommandSpec::new("mailings.sortRecipients", "Sort Recipients", "Mailings › Start Mail Merge › Edit Recipient List", |s, v| {
+        spec!("mailings.sortRecipients", "Sort Recipients", "Mailings › Start Mail Merge › Edit Recipient List", |s, v| {
             s.merge.sort = parse_sort(&s.merge.headers, v.get("sort").or_else(|| v.get("field").map(|_| v)))?;
             apply_filter(s);
             filter_result(s)
@@ -120,19 +120,19 @@ pub fn specs() -> Vec<CommandSpec> {
         .params(r#"{"sort"?: [{"field": string, "descending"?: bool}]} | {"field": string, "descending"?: bool} (no params: the list's own order)"#)
         .when(has_list)
         .pure(),
-        CommandSpec::new("mailings.insertField", "Insert Merge Field", "Mailings › Write & Insert Fields", |s, v| {
+        spec!("mailings.insertField", "Insert Merge Field", "Mailings › Write & Insert Fields", |s, v| {
             let f = p::req_str(v, "field")?.to_string();
             insert_field(s, &format!("MERGEFIELD {}", quote(&f)), &format!("«{f}»"))
         })
         .params(r#"{"field": string}"#)
         .key(super::non_mac("Alt+Shift+F")),
-        CommandSpec::new("mailings.addressBlock", "Address Block", "Mailings › Write & Insert Fields", |s, _| {
+        spec!("mailings.addressBlock", "Address Block", "Mailings › Write & Insert Fields", |s, _| {
             insert_field(s, "ADDRESSBLOCK", "«AddressBlock»")
         }),
-        CommandSpec::new("mailings.greetingLine", "Greeting Line", "Mailings › Write & Insert Fields", |s, _| {
+        spec!("mailings.greetingLine", "Greeting Line", "Mailings › Write & Insert Fields", |s, _| {
             insert_field(s, "GREETINGLINE", "«GreetingLine»")
         }),
-        CommandSpec::new("mailings.rules", "Rules", "Mailings › Write & Insert Fields", |s, v| {
+        spec!("mailings.rules", "Rules", "Mailings › Write & Insert Fields", |s, v| {
             let rule = p::str(v, "rule").unwrap_or("NEXT").to_ascii_uppercase();
             let instr = match rule.as_str() {
                 "IF" => format!(
@@ -151,34 +151,34 @@ pub fn specs() -> Vec<CommandSpec> {
             insert_field(s, &instr, "")
         })
         .params(r#"{"rule": "IF|SKIPIF|NEXTIF|NEXT|MERGEREC", "field"?, "value"?, "then"?, "else"?}"#),
-        CommandSpec::new("mailings.matchFields", "Match Fields", "Mailings › Write & Insert Fields", |s, _| {
+        spec!("mailings.matchFields", "Match Fields", "Mailings › Write & Insert Fields", |s, _| {
             Ok(json!({"fields": s.merge.headers, "address": address_map(&s.merge.headers)}))
         })
         .pure(),
-        CommandSpec::new("mailings.highlightFields", "Highlight Merge Fields", "Mailings › Write & Insert Fields", |s, v| {
+        spec!("mailings.highlightFields", "Highlight Merge Fields", "Mailings › Write & Insert Fields", |s, v| {
             s.merge.highlight = p::bool(v, "value").unwrap_or(!s.merge.highlight);
             Ok(json!({"value": s.merge.highlight}))
         })
         .pure(),
-        CommandSpec::new("mailings.preview", "Preview Results", "Mailings › Preview Results", |s, v| {
+        spec!("mailings.preview", "Preview Results", "Mailings › Preview Results", |s, v| {
             s.merge.preview = p::bool(v, "value").unwrap_or(!s.merge.preview);
             refresh(s);
             Ok(json!({"preview": s.merge.preview, "record": s.merge.record + 1}))
         })
         .key(super::non_mac("Alt+Shift+K"))
         .when(has_recipients),
-        CommandSpec::new("mailings.next", "Next Record", "Mailings › Preview Results", |s, _| step(s, 1)).when(has_recipients),
-        CommandSpec::new("mailings.previous", "Previous Record", "Mailings › Preview Results", |s, _| step(s, -1)).when(has_recipients),
-        CommandSpec::new("mailings.first", "First Record", "Mailings › Preview Results", |s, _| go_to(s, 0)).when(has_recipients),
-        CommandSpec::new("mailings.last", "Last Record", "Mailings › Preview Results", |s, _| go_to(s, i64::MAX)).when(has_recipients),
-        CommandSpec::new("mailings.goToRecord", "Go to Record", "Mailings › Preview Results", |s, v| {
+        spec!("mailings.next", "Next Record", "Mailings › Preview Results", |s, _| step(s, 1)).when(has_recipients),
+        spec!("mailings.previous", "Previous Record", "Mailings › Preview Results", |s, _| step(s, -1)).when(has_recipients),
+        spec!("mailings.first", "First Record", "Mailings › Preview Results", |s, _| go_to(s, 0)).when(has_recipients),
+        spec!("mailings.last", "Last Record", "Mailings › Preview Results", |s, _| go_to(s, i64::MAX)).when(has_recipients),
+        spec!("mailings.goToRecord", "Go to Record", "Mailings › Preview Results", |s, v| {
             let n = v.get("record").and_then(|r| r.as_i64().or_else(|| r.as_str().and_then(|t| t.trim().parse().ok())));
             let n = n.ok_or_else(|| CmdError::Params("`record` must be a record number (1 = the first)".into()))?;
             go_to(s, n.saturating_sub(1))
         })
         .params(r#"{"record": n (1 = the first; past either end goes to the first or last record)}"#)
         .when(has_recipients),
-        CommandSpec::new("mailings.findRecipient", "Find Recipient", "Mailings › Preview Results", |s, v| {
+        spec!("mailings.findRecipient", "Find Recipient", "Mailings › Preview Results", |s, v| {
             let q = p::req_str(v, "text")?.to_lowercase();
             let idx = s
                 .merge
@@ -192,7 +192,7 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"record": idx + 1}))
         })
         .when(has_recipients),
-        CommandSpec::new("mailings.checkErrors", "Check for Errors", "Mailings › Finish", |s, _| {
+        spec!("mailings.checkErrors", "Check for Errors", "Mailings › Finish", |s, _| {
             let mut missing = Vec::new();
             for f in merge_fields(&s.doc) {
                 if !s.merge.headers.iter().any(|h| h.eq_ignore_ascii_case(&f)) {
@@ -202,11 +202,11 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"ok": missing.is_empty(), "unknownFields": missing, "records": s.merge.rows.len()}))
         })
         .pure(),
-        CommandSpec::new("mailings.finish", "Finish & Merge", "Mailings › Finish", finish)
+        spec!("mailings.finish", "Finish & Merge", "Mailings › Finish", finish)
             .params(r#"{"path"?: string (save the merged document), "records"?: "all|current" (current: the previewed record; default all, or from/to), "from"?: n, "to"?: n (record numbers, 1 = the first)}"#)
             .key(super::non_mac("Alt+Shift+N"))
             .when(has_recipients),
-        CommandSpec::new("mailings.printDocuments", "Print Documents", "Mailings › Finish › Finish & Merge", |s, v| {
+        spec!("mailings.printDocuments", "Print Documents", "Mailings › Finish › Finish & Merge", |s, v| {
             let mut v = v.clone();
             if let Some(o) = v.as_object_mut() {
                 o.remove("path");
@@ -218,10 +218,10 @@ pub fn specs() -> Vec<CommandSpec> {
         .params(r#"{"records"?: "all|current", "from"?: n, "to"?: n} (merges into a new document, as Finish & Merge does, and opens Print for it)"#)
         .key(super::non_mac("Alt+Shift+M"))
         .when(has_recipients),
-        CommandSpec::new("mailings.envelopes", "Envelopes", "Mailings › Create", envelopes).params(
+        spec!("mailings.envelopes", "Envelopes", "Mailings › Create", envelopes).params(
             r#"{"delivery": string, "return"?: string, "size"?: "Envelope #10|#9|Monarch|DL|C4|C5|C6|B5", "width"?: pt, "height"?: pt, "add"?: bool (add to this document instead of a new one)}"#,
         ),
-        CommandSpec::new("mailings.labels", "Labels", "Mailings › Create", labels).params(
+        spec!("mailings.labels", "Labels", "Mailings › Create", labels).params(
             r#"{"text"?: string, "product"?: "letter-3x10|letter-2x10|letter-2x7|letter-2x5|letter-4x20|a4-3x7|a4-2x7|a4-3x8|a4-2x4", "rows"?: n, "cols"?: n, "fromRecipients"?: bool (one label per selected recipient, continuing across sheets), "single"?: {"row": n, "col": n}}"#,
         ),
     ]

@@ -39,7 +39,7 @@ fn has_sel(s: &Session) -> Option<&'static str> {
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("edit.undo", "Undo", "Quick Access Toolbar", |s, _| {
+        spec!("edit.undo", "Undo", "Quick Access Toolbar", |s, _| {
             if s.step_lifts_protection(false) {
                 return Err(CmdError::Disabled("edit.undo: use Stop Protection to lift the document's protection".into()));
             }
@@ -48,15 +48,15 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .key("Mod+Z")
         .pure(),
-        CommandSpec::new("edit.undoTo", "Undo Actions", "Quick Access Toolbar", undo_to)
+        spec!("edit.undoTo", "Undo Actions", "Quick Access Toolbar", undo_to)
             .params(r#"{"count": n (1 = the newest step, like edit.undo; n undoes the newest n steps at once; at most the undo depth)}"#)
             .when(|s| if s.can_undo() { None } else { Some("there is nothing to undo") })
             .pure(),
-        CommandSpec::new("edit.undoHistory", "Undo History", "Quick Access Toolbar", |s, _| {
+        spec!("edit.undoHistory", "Undo History", "Quick Access Toolbar", |s, _| {
             Ok(json!({"undo": s.undo_history(), "depth": s.undo_depth(), "redo": s.redo_label()}))
         })
         .pure(),
-        CommandSpec::new("edit.redo", "Redo", "Quick Access Toolbar", |s, _| {
+        spec!("edit.redo", "Redo", "Quick Access Toolbar", |s, _| {
             if s.step_lifts_protection(true) {
                 return Err(CmdError::Disabled("edit.redo: use Stop Protection to lift the document's protection".into()));
             }
@@ -65,12 +65,12 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .key("Mod+Y / Mod+Shift+Z")
         .pure(),
-        CommandSpec::new("edit.cut", "Cut", "Home › Clipboard", cut).key("Mod+X").when(has_sel),
-        CommandSpec::new("edit.copy", "Copy", "Home › Clipboard", copy).key("Mod+C / Mod+Insert").pure(),
+        spec!("edit.cut", "Cut", "Home › Clipboard", cut).key("Mod+X").when(has_sel),
+        spec!("edit.copy", "Copy", "Home › Clipboard", copy).key("Mod+C / Mod+Insert").pure(),
         // Word's Spike (Ctrl+F3, Ctrl+Shift+F3; ⌘ on the Mac): the AutoText entry "Spike", so Quick
         // Parts and AutoText insert it without emptying it, as in Word.
-        CommandSpec::new("edit.spike", "Spike", "Editing", spike).key("Mod+F3").when(has_text_sel),
-        CommandSpec::new("edit.insertSpike", "Insert Spike", "Editing", insert_spike).key("Mod+Shift+F3").when(|s| {
+        spec!("edit.spike", "Spike", "Editing", spike).key("Mod+F3").when(has_text_sel),
+        spec!("edit.insertSpike", "Insert Spike", "Editing", insert_spike).key("Mod+Shift+F3").when(|s| {
             if s.math.is_some() {
                 Some("leave the equation first")
             } else if s.building_blocks.contains_key(SPIKE) {
@@ -79,25 +79,25 @@ pub fn specs() -> Vec<CommandSpec> {
                 Some("the Spike is empty")
             }
         }),
-        CommandSpec::new("edit.paste", "Paste", "Home › Clipboard", paste).key("Mod+V / Shift+Insert").params(r#"{"text"?: string, "html"?: string, "rtf"?: string}"#),
-        CommandSpec::new("edit.pasteText", "Paste: Keep Text Only", "Home › Clipboard › Paste", paste_text)
+        spec!("edit.paste", "Paste", "Home › Clipboard", paste).key("Mod+V / Shift+Insert").params(r#"{"text"?: string, "html"?: string, "rtf"?: string}"#),
+        spec!("edit.pasteText", "Paste: Keep Text Only", "Home › Clipboard › Paste", paste_text)
             .params(r#"{"text"?: string}"#)
             .key("Mod+Shift+Alt+V"),
-        CommandSpec::new("edit.pasteMerge", "Paste: Merge Formatting", "Home › Clipboard › Paste", paste_merge)
+        spec!("edit.pasteMerge", "Paste: Merge Formatting", "Home › Clipboard › Paste", paste_merge)
             .params(r#"{"text"?: string, "html"?: string, "rtf"?: string}"#),
-        CommandSpec::new("edit.clipboardPane", "Clipboard Pane", "Home › Clipboard", |s, v| {
+        spec!("edit.clipboardPane", "Clipboard Pane", "Home › Clipboard", |s, v| {
             let on = p::bool(v, "value").unwrap_or(!s.view.clipboard_pane);
             s.view.clipboard_pane = on;
             Ok(json!({"value": on, "count": s.clip_history.len()}))
         })
         .params(r#"{"value"?: bool}"#)
         .pure(),
-        CommandSpec::new("edit.clipboardItems", "Clipboard Items", "Home › Clipboard › Clipboard Pane", |s, _| Ok(s.clip_history.describe())).pure(),
-        CommandSpec::new("edit.pasteClipboardItem", "Paste Clipboard Item", "Home › Clipboard › Clipboard Pane", paste_clip_item)
+        spec!("edit.clipboardItems", "Clipboard Items", "Home › Clipboard › Clipboard Pane", |s, _| Ok(s.clip_history.describe())).pure(),
+        spec!("edit.pasteClipboardItem", "Paste Clipboard Item", "Home › Clipboard › Clipboard Pane", paste_clip_item)
             .params(r#"{"index": n (0 = newest)}"#)
             .when(has_clips),
-        CommandSpec::new("edit.pasteAllClipboard", "Paste All", "Home › Clipboard › Clipboard Pane", paste_all_clips).when(has_clips),
-        CommandSpec::new("edit.deleteClipboardItem", "Delete Clipboard Item", "Home › Clipboard › Clipboard Pane", |s, v| {
+        spec!("edit.pasteAllClipboard", "Paste All", "Home › Clipboard › Clipboard Pane", paste_all_clips).when(has_clips),
+        spec!("edit.deleteClipboardItem", "Delete Clipboard Item", "Home › Clipboard › Clipboard Pane", |s, v| {
             let i = clip_index(s, v)?;
             s.clip_history.items.remove(i);
             Ok(s.clip_history.describe())
@@ -105,26 +105,26 @@ pub fn specs() -> Vec<CommandSpec> {
         .params(r#"{"index": n (0 = newest)}"#)
         .when(has_clips)
         .pure(),
-        CommandSpec::new("edit.clearClipboard", "Clear All", "Home › Clipboard › Clipboard Pane", |s, _| {
+        spec!("edit.clearClipboard", "Clear All", "Home › Clipboard › Clipboard Pane", |s, _| {
             s.clip_history.items.clear();
             Ok(s.clip_history.describe())
         })
         .pure(),
-        CommandSpec::new("edit.find", "Find", "Home › Editing", find)
+        spec!("edit.find", "Find", "Home › Editing", find)
             .key("Mod+F")
             .params(r#"{"text": string, "matchCase"?: bool, "wholeWord"?: bool, "matchPrefix"?: bool, "matchSuffix"?: bool, "ignorePunct"?: bool, "ignoreSpace"?: bool, "wildcards"?: bool, "special"?: bool (^p ^t ^# … codes, default true), "regex"?: bool}"#)
             .pure(),
-        CommandSpec::new("edit.advancedFind", "Advanced Find", "Home › Editing › Find", advanced_find)
+        spec!("edit.advancedFind", "Advanced Find", "Home › Editing › Find", advanced_find)
             .params(r#"{"text"?: string, …options of edit.find, "in"?: "main|selection", "highlight"?: bool}"#)
             .pure(),
-        CommandSpec::new("edit.findNext", "Find Next", "Home › Editing › Find", |s, v| {
+        spec!("edit.findNext", "Find Next", "Home › Editing › Find", |s, v| {
             read_opts(s, v);
             step(s, 1)
         })
         .key("Mod+G / F3 / Shift+F4 / Mod+PageDown")
         .params(r#"{"text"?: string, "matchCase"?: bool, "wholeWord"?: bool, "regex"?: bool}"#)
         .pure(),
-        CommandSpec::new("edit.findPrevious", "Find Previous", "Home › Editing › Find", |s, v| {
+        spec!("edit.findPrevious", "Find Previous", "Home › Editing › Find", |s, v| {
             read_opts(s, v);
             step(s, -1)
         })
@@ -132,10 +132,10 @@ pub fn specs() -> Vec<CommandSpec> {
         .key(super::mac_or("Mod+Shift+G / Mod+PageUp", "Mod+PageUp"))
         .params(r#"{"text"?: string, "matchCase"?: bool, "wholeWord"?: bool, "regex"?: bool}"#)
         .pure(),
-        CommandSpec::new("edit.replace", "Replace", "Home › Editing", replace).params(r#"{"text": string, "with": string, …options of edit.replaceAll}"#),
+        spec!("edit.replace", "Replace", "Home › Editing", replace).params(r#"{"text": string, "with": string, …options of edit.replaceAll}"#),
         // Ctrl+H, Home › Replace: the Find and Replace dialog on its Replace tab (#712). Opening
         // it changes nothing, so it is its own command and never marks the document edited.
-        CommandSpec::new("edit.findReplace", "Find and Replace", "Home › Editing", |s, v| {
+        spec!("edit.findReplace", "Find and Replace", "Home › Editing", |s, v| {
             let tab = match p::str(v, "tab").unwrap_or("replace") {
                 t @ ("find" | "replace" | "goto") => t,
                 other => return Err(CmdError::Params(format!("`tab` is find, replace or goto, not `{other}`"))),
@@ -147,13 +147,13 @@ pub fn specs() -> Vec<CommandSpec> {
         .key(super::mac_or("Mod+H / Ctrl+H", "Mod+H"))
         .params(r#"{"tab"?: "find|replace|goto" (default replace)}"#)
         .pure(),
-        CommandSpec::new("edit.replaceAll", "Replace All", "Home › Editing › Replace", replace_all)
+        spec!("edit.replaceAll", "Replace All", "Home › Editing › Replace", replace_all)
             .params(r#"{"text": string, "with": string (^p ^t ^& ^c …; \\1 with wildcards; with regex also $1 ${n} ${name} $0 $$ \\1 \\n (paragraph mark) \\t), …options of edit.find}"#),
-        CommandSpec::new("edit.goto", "Go To", "Home › Editing › Find", goto)
+        spec!("edit.goto", "Go To", "Home › Editing › Find", goto)
             .key("Mod+Alt+G / F5")
             .params(r#"{"page"?: n, "pageBy"?: int (pages forward, negative back, from the caret's page), "bookmark"?: string (selects its text), "paragraph"?: n}; none opens Find and Replace on its Go To tab"#)
             .pure(),
-        CommandSpec::new("edit.goBack", "Go Back", "Navigation", |s, _| {
+        spec!("edit.goBack", "Go Back", "Navigation", |s, _| {
             let p = s.go_back().ok_or_else(|| CmdError::Failed("no edits to go back to yet".into()))?;
             s.sel = Selection::caret(p);
             s.goal_x = None;
@@ -161,14 +161,14 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .key("Shift+F5 / Mod+Alt+Z")
         .pure(),
-        CommandSpec::new("edit.formatPainter", "Format Painter", "Home › Clipboard", painter).params(r#"{"sticky"?: bool}"#).pure(),
-        CommandSpec::new("edit.copyFormat", "Copy Formatting", "Home › Clipboard", |s, _| {
+        spec!("edit.formatPainter", "Format Painter", "Home › Clipboard", painter).params(r#"{"sticky"?: bool}"#).pure(),
+        spec!("edit.copyFormat", "Copy Formatting", "Home › Clipboard", |s, _| {
             painter_pick(s);
             sel_result(s)
         })
         .key("Mod+Shift+C")
         .pure(),
-        CommandSpec::new("edit.pasteFormat", "Paste Formatting", "Home › Clipboard", paste_format).key("Mod+Shift+V"),
+        spec!("edit.pasteFormat", "Paste Formatting", "Home › Clipboard", paste_format).key("Mod+Shift+V"),
     ]
 }
 

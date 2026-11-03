@@ -85,23 +85,23 @@ fn rename(s: &mut Session, v: &Value) -> CmdResult {
 /// `file.newFromTemplate` and `file.saveTemplate` are registered in [`super::tools::specs`].
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("file.rename", "Rename Document", "File › Info", rename).params(r#"{"name": string (document name; its extension is kept, so the name may be given with or without it)}"#).pure(),
-        CommandSpec::new("file.new", "New", "File", new).key("Mod+N").params(r#"{"template"?: "blank|sample|letter|resume|report"}"#).pure(),
-        CommandSpec::new("file.open", "Open", "File", open)
+        spec!("file.rename", "Rename Document", "File › Info", rename).params(r#"{"name": string (document name; its extension is kept, so the name may be given with or without it)}"#).pure(),
+        spec!("file.new", "New", "File", new).key("Mod+N").params(r#"{"template"?: "blank|sample|letter|resume|report"}"#).pure(),
+        spec!("file.open", "Open", "File", open)
             .key("Mod+O / Mod+F12 / Mod+Alt+F2")
             .params(r#"{"path": string, "data"?: base64 (the file's bytes; `path` then only names it), "password"?: string (for a password-protected Word document)}"#)
             .pure(),
-        CommandSpec::new("file.save", "Save", "File", save)
+        spec!("file.save", "Save", "File", save)
             .key("Mod+S / Shift+F12 / Alt+Shift+F2")
             .params(r#"{"path"?: string, "password"?: string (encrypt this and later saves with it, as file.encrypt does), "markup"?: bool (Print Markup for a PDF, PNG, HTML, Markdown or text copy: comments shown; default file.printMarkup), "format"?: "wordml2003" (an .xml file as a Word 2003 XML Document) | "flatopc" (as a Word XML Document, the default; saving over a Word 2003 XML file keeps that format)}"#)
             .pure(),
-        CommandSpec::new("file.saveAs", "Save As", "File", save_as).key(super::mac_or("F12 / Mod+Shift+S", "F12 / Alt+F2")).params(r#"{"path": string, "password"?: string, "markup"?: bool, "format"?: string (as file.save)}"#).pure(),
+        spec!("file.saveAs", "Save As", "File", save_as).key(super::mac_or("F12 / Mod+Shift+S", "F12 / Alt+F2")).params(r#"{"path": string, "password"?: string, "markup"?: bool, "format"?: string (as file.save)}"#).pure(),
         // Pure: the password must not land in Repeat or a recorded macro, and it isn't an edit
         // to undo; it marks the document as changed itself.
-        CommandSpec::new("file.encrypt", "Encrypt with Password", "File › Info › Protect Document", encrypt)
+        spec!("file.encrypt", "Encrypt with Password", "File › Info › Protect Document", encrypt)
             .params(r#"{"password": string (Word documents are saved encrypted with it) | null or "" (saved unencrypted)}"#)
             .pure(),
-        CommandSpec::new("file.exportPdf", "Export PDF", "File › Export", |s, v| {
+        spec!("file.exportPdf", "Export PDF", "File › Export", |s, v| {
             // No path (the command search, say): the app asks where to save, as File › Export
             // does, instead of failing on the required parameter (#2313).
             let Some(path) = p::str(v, "path") else {
@@ -115,48 +115,48 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"path": string, "markup"?: bool (Print Markup: tracked changes marked up and each page scaled down beside the comments in balloons; default file.printMarkup)}"#)
         .pure(),
-        CommandSpec::new("file.exportPng", "Export Page as PNG", "File › Export", export_png)
+        spec!("file.exportPng", "Export Page as PNG", "File › Export", export_png)
             .params(r#"{"path": string, "page"?: n (1-based), "scale"?: px per pt, "markup"?: bool (the page with its comments in balloons beside it; default file.printMarkup)}"#)
             .pure(),
         // A print setting, like Word's: not part of the document, so no undo step.
-        CommandSpec::new("file.printMarkup", "Print Markup", "File › Print", |s, v| {
+        spec!("file.printMarkup", "Print Markup", "File › Print", |s, v| {
             s.prefs.print_markup = p::bool(v, "value").unwrap_or(!s.prefs.print_markup);
             Ok(json!({"value": s.prefs.print_markup}))
         })
         .params(r#"{"value"?: bool (omit to toggle)} — PDFs, prints and copies show comments (balloons beside each page; a list at the end of HTML, Markdown and text) and tracked changes"#)
         .pure(),
-        CommandSpec::new("file.printPdf", "Print to PDF", "File › Print", crate::print::print_pdf_to_file)
+        spec!("file.printPdf", "Print to PDF", "File › Print", crate::print::print_pdf_to_file)
             .params(
                 r#"{"path": string, "range"?: "all" | "current" | "selection" (the pages the selection touches) | "custom", "pages"?: "1-3,5" (implies custom), "parity"?: "all" | "odd" | "even", "copies"?: 1-999, "collate"?: bool (default true), "paper"?: "none" | "Letter" | "Legal" | "A4" | … (a Layout › Size name: scale every page to this paper, centred; the document keeps its size)}"#,
             )
             .pure(),
-        CommandSpec::new("file.print", "Print", "File", |s, _| {
+        spec!("file.print", "Print", "File", |s, _| {
             s.push_ui_request(json!({"open": "print"}));
             sel_result(s)
         })
         .key("Mod+P / Mod+Shift+F12 / Mod+F2 / Mod+Alt+I")
         .pure(),
-        CommandSpec::new("file.close", "Close", "File", |s, _| {
+        spec!("file.close", "Close", "File", |s, _| {
             s.push_ui_request(json!({"close": true}));
             sel_result(s)
         })
         .key("Mod+W / Mod+F4")
         .params(r#"{"force"?: bool (desktop app's control channel and MCP bridge only: without it a document with unsaved changes is an error and stays open; with it the changes are discarded. Headless sessions never ask; file.closeDocument closes a document there)}"#)
         .pure(),
-        CommandSpec::new("file.closeDocument", "Close Document", "Agents", close_document)
+        spec!("file.closeDocument", "Close Document", "Agents", close_document)
             .params(r#"{"id"?: n (an open document, see view.switchWindows; default the active one), "force"?: bool (discard unsaved changes; without it a document with unsaved changes is an error and stays open)} → {"closed": id, "active": id, "documents": [{"id", "title", "path", "dirty", "active"}]}; closing the last document leaves a new blank one"#)
             .pure(),
-        CommandSpec::new("file.properties", "Properties", "File › Info", properties)
+        spec!("file.properties", "Properties", "File › Info", properties)
             .params(r#"{"title"?, "subject"?, "author"?, "keywords"?, "comments"?, "category"?, "custom"?: {name: string | {"value": string, "linkTarget"?: string | null} | null (removes)}}; text values and bookmark targets are at most 1 MiB; a string keeps an existing target, an object replaces it (omitted/null target unlinks)"#),
-        CommandSpec::new("file.info", "Info", "File", info).pure(),
-        CommandSpec::new("file.setAuthor", "User Name", "File › Options › General", set_author)
+        spec!("file.info", "Info", "File", info).pure(),
+        spec!("file.setAuthor", "User Name", "File › Options › General", set_author)
             .params(r#"{"name": string (author of new tracked changes and comments)}"#)
             .pure(),
         // Trust Center › Privacy Options: the document's `w:removePersonalInformation` and
         // `w:removeDateAndTime` settings, honoured when it is saved as .docx (#1062).
         // Changing them is a document change (undoable, refused on a protected document); reading
         // them is `file.privacy`, which changes nothing.
-        CommandSpec::new("file.privacyOptions", "Privacy Options", "File › Options › Save", |s, v| {
+        spec!("file.privacyOptions", "Privacy Options", "File › Options › Save", |s, v| {
             let personal = p::bool(v, "removePersonalInfo");
             let date_time = p::bool(v, "removeDateTime");
             if personal.is_none() && date_time.is_none() {
@@ -171,17 +171,17 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(privacy(s))
         })
         .params(r#"{"removePersonalInfo"?: bool (save comment and revision authors as "Author", no creator or last-modified-by), "removeDateTime"?: bool (save comments and tracked changes without dates)} — at least one; the open document keeps its real names and dates"#),
-        CommandSpec::new("file.privacy", "Privacy Settings", "File › Options › Save", |s, _| Ok(privacy(s)))
+        spec!("file.privacy", "Privacy Settings", "File › Options › Save", |s, _| Ok(privacy(s)))
             .params(r#"{} → {"removePersonalInfo": bool, "removeDateTime": bool} (file.privacyOptions changes them)"#)
             .pure(),
-        CommandSpec::new("document.inspect", "Inspect Document", "Agents", inspect).params(r#"{"text"?: bool}"#).pure(),
-        CommandSpec::new("document.text", "Document Text", "Agents", |s, v| {
+        spec!("document.inspect", "Inspect Document", "Agents", inspect).params(r#"{"text"?: bool}"#).pure(),
+        spec!("document.text", "Document Text", "Agents", |s, v| {
             let story = super::story_param(s, v);
             Ok(json!({"text": s.doc.final_text(story)}))
         })
         .pure(),
-        CommandSpec::new("document.paragraph", "Paragraph Details", "Agents", paragraph).params(r#"{"path": [n], "story"?: Story}"#).pure(),
-        CommandSpec::new("document.selection", "Selection", "Agents", |s, _| {
+        spec!("document.paragraph", "Paragraph Details", "Agents", paragraph).params(r#"{"path": [n], "story"?: Story}"#).pure(),
+        spec!("document.selection", "Selection", "Agents", |s, _| {
             let mut r = sel_result(s)?;
             if let Some(o) = r.as_object_mut() {
                 o.insert("text".into(), json!(s.selected_text()));
@@ -190,8 +190,8 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(r)
         })
         .pure(),
-        CommandSpec::new("document.layout", "Layout Summary", "Agents", layout_summary).pure(),
-        CommandSpec::new("document.setText", "Replace Document Text", "Agents", |s, v| {
+        spec!("document.layout", "Layout Summary", "Agents", layout_summary).pure(),
+        spec!("document.setText", "Replace Document Text", "Agents", |s, v| {
             let text = p::req_str(v, "text")?;
             let d = Document::from_text(text);
             s.doc.body = d.body;

@@ -13,20 +13,15 @@ use crate::{CmdError, CmdResult, CommandSpec, Session, p};
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("review.readAloud", "Read Aloud", "Review › Speech", read_aloud)
-            .key("Mod+Alt+Space")
-            .params(r#"{"skipCitations"?: bool}"#)
-            .pure(),
-        CommandSpec::new("readAloud.playPause", "Play/Pause", "Review › Speech", play_pause).pure(),
-        CommandSpec::new("readAloud.next", "Next Sentence", "Review › Speech", next).pure(),
-        CommandSpec::new("readAloud.previous", "Previous Sentence", "Review › Speech", previous).pure(),
-        CommandSpec::new("readAloud.stop", "Stop Reading", "Review › Speech", stop).pure(),
-        CommandSpec::new("readAloud.speed", "Reading Speed", "Review › Speech", speed).params(r#"{"value": number (0.5…3, 1 = normal)}"#).pure(),
-        CommandSpec::new("readAloud.skipCitations", "Skip Citations and Bibliography", "Review › Speech", skip_citations)
-            .params(r#"{"value"?: bool}"#)
-            .pure(),
-        CommandSpec::new("readAloud.status", "Read Aloud Status", "Review › Speech", status).pure(),
-        CommandSpec::new("caret.pastCitation", "Move Past Citation", "Zotero › Citations", past_citation).pure(),
+        spec!("review.readAloud", "Read Aloud", "Review › Speech", read_aloud).key("Mod+Alt+Space").params(r#"{"skipCitations"?: bool}"#).pure(),
+        spec!("readAloud.playPause", "Play/Pause", "Review › Speech", play_pause).pure(),
+        spec!("readAloud.next", "Next Sentence", "Review › Speech", next).pure(),
+        spec!("readAloud.previous", "Previous Sentence", "Review › Speech", previous).pure(),
+        spec!("readAloud.stop", "Stop Reading", "Review › Speech", stop).pure(),
+        spec!("readAloud.speed", "Reading Speed", "Review › Speech", speed).params(r#"{"value": number (0.5…3, 1 = normal)}"#).pure(),
+        spec!("readAloud.skipCitations", "Skip Citations and Bibliography", "Review › Speech", skip_citations).params(r#"{"value"?: bool}"#).pure(),
+        spec!("readAloud.status", "Read Aloud Status", "Review › Speech", status).pure(),
+        spec!("caret.pastCitation", "Move Past Citation", "Zotero › Citations", past_citation).pure(),
     ]
 }
 

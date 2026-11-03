@@ -14,13 +14,13 @@ use super::{
 /// markup, editor and selection commands; and design and view options.
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("edit.repeat", "Repeat", "Quick Access Toolbar", |s, _| {
+        spec!("edit.repeat", "Repeat", "Quick Access Toolbar", |s, _| {
             let Some((id, params)) = s.last_command.clone() else { return Err(CmdError::Failed("nothing to repeat".into())) };
             s.run(&id, &params)
         })
         .key("F4")
         .pure(),
-        CommandSpec::new("tools.recordMacro", "Record Macro", "View › Macros", |s, v| match s.recording.take() {
+        spec!("tools.recordMacro", "Record Macro", "View › Macros", |s, v| match s.recording.take() {
             Some((name, steps)) => {
                 let n = steps.len();
                 s.macros.insert(name.clone(), steps);
@@ -34,41 +34,41 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"name"?: string} (call again to stop)"#)
         .pure(),
-        CommandSpec::new("tools.macros", "Macros", "View › Macros", macros)
+        spec!("tools.macros", "Macros", "View › Macros", macros)
             .key("Alt+F8")
             .params(r#"{"run"?: name, "define"?: {"name": string, "steps": [{"command", "params"}]}, "delete"?: name}"#)
             .pure(),
-        CommandSpec::new("tools.autocorrect", "AutoCorrect Options", "File › Options › Proofing", autocorrect_options)
+        spec!("tools.autocorrect", "AutoCorrect Options", "File › Options › Proofing", autocorrect_options)
             .params(
                 r#"{"enabled"?: bool (all of AutoCorrect), "replaceText"|"twoInitialCaps"|"capSentences"|"capCells"|"capDays"|"capsLock"|"smartQuotes"|"fractions"|"ordinals"|"dashes"|"links"|"bullets"|"numbering"|"borderLines"?: bool, "boldItalic"?: bool (*bold* and _italic_ with real formatting; default false), "tabIndent"?: bool (Set left- and first-indent with tabs and backspaces; default false), "headingStyles"?: bool (Built-in Heading styles; default false), "doubleSpacePeriod"?: bool (Add a period with double-space; default false), "autoAddFirstLetter"|"autoAddInitialCaps"?: bool (Automatically add words to the exception lists when an automatic capital is undone; default true), "add"?: {"from": string, "to": string} (adds or replaces an entry), "delete"?: string (an entry's "from", built in or added), "addException"?: string, "deleteException"?: string, "addInitialCapsException"?: string (keeps TWo INitial CApitals, like "IDs"), "deleteInitialCapsException"?: string} → options, entries and exceptions"#,
             )
             .pure(),
-        CommandSpec::new("tools.customizeKeyboard", "Customize Keyboard", "File › Options", customize_keyboard)
+        spec!("tools.customizeKeyboard", "Customize Keyboard", "File › Options", customize_keyboard)
             .params(
                 r#"{"command"?: id (its keys), "key"?: "Mod+Shift+K" (the command it runs), "assign"?: {"command": id, "key": string}, "remove"?: {"command": id, "key": string}, "reset"?: true (built-in keys only)} → {custom: {assigned: {key: id}, removed: [key]}, …}; no params opens the dialog"#,
             )
             .pure(),
-        CommandSpec::new("tools.customizeRibbon", "Customize Ribbon", "File › Options", customize_ribbon)
+        spec!("tools.customizeRibbon", "Customize Ribbon", "File › Options", customize_ribbon)
             .params(
                 r#"{"hide"?: tab, "show"?: tab, "newTab"?: {"name"?, "after"?: tab}, "newGroup"?: {"tab", "name"?}, "add"?: {"tab", "group", "command", "after"?: id}, "remove"?: {"tab", "group"?, "command"?}, "rename"?: {"tab", "group"?, "to"}, "move"?: {"tab", "group"?, "command"?, "by": int}, "qatAdd"?: id, "qatRemove"?: id, "qatMove"?: {"command", "by": int}, "reset"?: true | "ribbon" | "qat", "layout"?: object} → {tabs: [{name, custom?, hidden?, groups?: [{name, commands}]}], qat: [id]}; only custom tabs and groups can be renamed or removed (built-in tabs can be hidden and moved); no params opens the dialog"#,
             )
             .pure(),
         // Word's Search box in the title bar ("Tell me what you want to do"), Alt+Q (#819).
-        CommandSpec::new("tools.search", "Search", "Title Bar", search_commands)
+        spec!("tools.search", "Search", "Title Bar", search_commands)
             .key(crate::cmd::non_mac("Alt+Q"))
             .params(r#"{"query"?: string} → {matches: [{id, label, location, shortcut}]} (every word of the query in the label, location or id; at most 50); no query opens the Search box"#)
             .pure(),
-        CommandSpec::new("review.compare", "Compare", "Review › Compare", compare).params(COMPARE_PARAMS),
-        CommandSpec::new("review.combine", "Combine", "Review › Compare", compare).params(COMPARE_PARAMS),
-        CommandSpec::new("file.accessibility", "Check Accessibility", "Review › Accessibility", accessibility).pure(),
-        CommandSpec::new("file.inspect", "Inspect Document", "File › Info", inspect_doc)
+        spec!("review.compare", "Compare", "Review › Compare", compare).params(COMPARE_PARAMS),
+        spec!("review.combine", "Combine", "Review › Compare", compare).params(COMPARE_PARAMS),
+        spec!("file.accessibility", "Check Accessibility", "Review › Accessibility", accessibility).pure(),
+        spec!("file.inspect", "Inspect Document", "File › Info", inspect_doc)
             .params(r#"{"remove"?: ["comments", "revisions", "properties", "hidden", "headers"]} → {found: {comments, revisions, properties, hiddenText, hiddenCount, hidden: [{story: "body|header|footer|footnote|endnote|comment|textBox", part?, text}] (at most 1000), truncated, unsupported: [{story, object: "table|opaque", ..}] (hidden text not inspected: table styles, verbatim objects), headers}, removed, residual: [..] (hidden text a removal couldn't reach), removedNotes: [{kind, part, text}] (notes whose hidden reference was removed)}; whole hidden paragraphs go with their marks; the removals are refused while the document tracks changes"#),
-        CommandSpec::new("file.protect", "Protect Document", "File › Info", |s, v| {
+        spec!("file.protect", "Protect Document", "File › Info", |s, v| {
             let mode = p::str(v, "mode").unwrap_or("readOnly");
             s.run("review.restrict", &json!({"mode": mode}))
         })
         .params(r#"{"mode": "none|readOnly|comments|trackedChanges"} (starting enforcement; "none" doesn't stop a protected document — use review.restrict {"stop": true})"#),
-        CommandSpec::new("file.versions", "Version History", "File › Info", |s, v| {
+        spec!("file.versions", "Version History", "File › Info", |s, v| {
             // Validate a restore before anything is saved: a rejected command must leave the
             // version list as it was. A `restore` that is there but not a non-negative integer
             // is refused, not read as absent.
@@ -115,10 +115,10 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"save"?: label, "restore"?: index}"#)
         .pure(),
-        CommandSpec::new("file.recover", "Recover Unsaved Documents", "File › Info", |s, v| s.recover(v))
+        spec!("file.recover", "Recover Unsaved Documents", "File › Info", |s, v| s.recover(v))
         .params(r#"{"restore"?: recoveryId, "discard"?: recoveryId, "refresh"?: true}; desktop only; returns {enabled,busy,documents,error}; restore loads asynchronously without a file path"#)
         .pure(),
-        CommandSpec::new("file.newFromTemplate", "New from Template", "File › New", |s, v| {
+        spec!("file.newFromTemplate", "New from Template", "File › New", |s, v| {
             let path = p::req_str(v, "path")?;
             let mut doc = crate::io::open_path(std::path::Path::new(path)).map_err(CmdError::Failed)?;
             // As in Word, the new document is attached to the template it came from (#2852).
@@ -129,7 +129,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"path": string} → a new, untitled document from the template, attached to it"#)
         .pure(),
-        CommandSpec::new("file.saveTemplate", "Save as Template", "File › Save As", |s, v| {
+        spec!("file.saveTemplate", "Save as Template", "File › Save As", |s, v| {
             let path = p::req_str(v, "path")?;
             // A .dotm keeps its name (#2852); anything else becomes a .dotx.
             let path = if crate::cmd::user_templates::is_template_name(path) { path.to_string() } else { format!("{path}.dotx") };
@@ -138,12 +138,12 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"path": string}"#)
         .pure(),
-        CommandSpec::new("file.autosave", "AutoSave", "Quick Access Toolbar", |s, v| {
+        spec!("file.autosave", "AutoSave", "Quick Access Toolbar", |s, v| {
             s.autosave = p::bool(v, "value").unwrap_or(!s.autosave);
             Ok(json!({"value": s.autosave}))
         })
         .pure(),
-        CommandSpec::new("file.compatibility", "Check Compatibility", "File › Info", |s, _| {
+        spec!("file.compatibility", "Check Compatibility", "File › Info", |s, _| {
             let mut issues = Vec::new();
             if s.doc
                 .para_paths(StoryRef::Body)
@@ -155,18 +155,18 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"issues": issues}))
         })
         .pure(),
-        CommandSpec::new("file.share", "Share", "File", |s, _| {
+        spec!("file.share", "Share", "File", |s, _| {
             s.push_ui_request(json!({"open": "saveAs"}));
             Ok(json!({"hint": "Save or export a copy (PDF, Word document) to share it."}))
         })
         .pure(),
-        CommandSpec::new("insert.quickParts", "Quick Parts", "Insert › Text", |s, v| quick_parts(s, v, wordcraft_doc::QUICK_PARTS_GALLERY)).params(
+        spec!("insert.quickParts", "Quick Parts", "Insert › Text", |s, v| quick_parts(s, v, wordcraft_doc::QUICK_PARTS_GALLERY)).params(
             r#"{"save"?: name (from the selection), "in"?: "document" (save into the document's own building blocks, kept in its file; else this session's), "insert"?: name, "delete"?: name} → {"parts": names (this session's, then the document's Quick Parts), "document": the document's Quick Parts}"#,
         ),
-        CommandSpec::new("insert.autoText", "AutoText", "Insert › Text › Quick Parts", |s, v| quick_parts(s, v, wordcraft_doc::AUTO_TEXT_GALLERY))
+        spec!("insert.autoText", "AutoText", "Insert › Text › Quick Parts", |s, v| quick_parts(s, v, wordcraft_doc::AUTO_TEXT_GALLERY))
             .key(crate::cmd::non_mac("Alt+F3"))
             .params(r#"{"save"?: name, "in"?: "document", "insert"?: name, "delete"?: name} → {"parts": names, "document": the document's AutoText}"#),
-        CommandSpec::new("insert.docProperty", "Document Property", "Insert › Text › Quick Parts", |s, v| {
+        spec!("insert.docProperty", "Document Property", "Insert › Text › Quick Parts", |s, v| {
             let name = p::str(v, "name").unwrap_or("Title").to_string();
             let c = &s.doc.core;
             let val = match name.to_lowercase().as_str() {
@@ -190,7 +190,7 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .params(r#"{"name": "Title|Author|Subject|Keywords|Comments|Category"}"#),
-        CommandSpec::new("insert.signatureLine", "Signature Line", "Insert › Text", |s, v| {
+        spec!("insert.signatureLine", "Signature Line", "Insert › Text", |s, v| {
             let signer = p::str(v, "signer").unwrap_or("").to_string();
             let title = p::str(v, "title").unwrap_or("").to_string();
             let at = delete_selection(s)?;
@@ -210,12 +210,12 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .params(r#"{"signer"?: string, "title"?: string}"#),
-        CommandSpec::new("insert.object", "Object", "Insert › Text", |s, v| {
+        spec!("insert.object", "Object", "Insert › Text", |s, v| {
             let path = p::req_str(v, "path")?;
             s.run("insert.textFromFile", &json!({"path": path}))
         })
         .params(r#"{"path": string}"#),
-        CommandSpec::new("insert.spreadsheet", "Spreadsheet Table", "Insert › Tables", |s, v| {
+        spec!("insert.spreadsheet", "Spreadsheet Table", "Insert › Tables", |s, v| {
             let csv = p::str(v, "csv").unwrap_or("A,B,C\n1,2,3\n4,5,6");
             let rows = crate::cmd::mailings::parse_csv(csv);
             let cols = rows.iter().map(Vec::len).max().unwrap_or(1).clamp(1, 63);
@@ -232,7 +232,7 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .params(r#"{"csv"?: string}"#),
-        CommandSpec::new("layout.linkToPrevious", "Link to Previous", "Header & Footer › Navigation", |s, v| {
+        spec!("layout.linkToPrevious", "Link to Previous", "Header & Footer › Navigation", |s, v| {
             let header = p::bool(v, "footer").map(|f| !f).unwrap_or(true);
             let block = s.sel.focus.path.0.first().copied().unwrap_or(0) as usize;
             let sect = s.doc.section_mut(block);
@@ -245,9 +245,9 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .key(crate::cmd::non_mac("Alt+Shift+R"))
         .params(r#"{"footer"?: bool}"#),
-        CommandSpec::new("hf.next", "Next Section", "Header & Footer › Navigation", |s, _| hf_nav(s, 1)).pure(),
-        CommandSpec::new("hf.previous", "Previous Section", "Header & Footer › Navigation", |s, _| hf_nav(s, -1)).pure(),
-        CommandSpec::new("hf.position", "Header/Footer Position", "Header & Footer › Position", |s, v| {
+        spec!("hf.next", "Next Section", "Header & Footer › Navigation", |s, _| hf_nav(s, 1)).pure(),
+        spec!("hf.previous", "Previous Section", "Header & Footer › Navigation", |s, _| hf_nav(s, -1)).pure(),
+        spec!("hf.position", "Header/Footer Position", "Header & Footer › Position", |s, v| {
             let (h, f) = (p::f32(v, "header"), p::f32(v, "footer"));
             let block = s.sel.focus.path.0.first().copied().unwrap_or(0) as usize;
             let sect = s.doc.section_mut(block);
@@ -260,7 +260,7 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"header": sect.header, "footer": sect.footer}))
         })
         .params(r#"{"header"?: pt, "footer"?: pt}"#),
-        CommandSpec::new("table.cellMargins", "Cell Margins", "Table Layout › Alignment", |s, v| {
+        spec!("table.cellMargins", "Cell Margins", "Table Layout › Alignment", |s, v| {
             let Some((tp, _, _)) = s.sel.focus.path.cell() else { return Err(CmdError::Disabled("not in a table".into())) };
             let story = s.sel.focus.story;
             let current = {
@@ -282,13 +282,13 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .params(r#"{"top"?, "left"?, "bottom"?, "right"? (pt)}"#),
-        CommandSpec::new("table.borderPainter", "Border Painter", "Table Design › Borders", |s, v| {
+        spec!("table.borderPainter", "Border Painter", "Table Design › Borders", |s, v| {
             s.run(
                 "table.borders",
                 &json!({"kind": p::str(v, "kind").unwrap_or("all"), "width": p::f32(v, "width").unwrap_or(0.5), "color": p::str(v, "color")}),
             )
         }),
-        CommandSpec::new("para.setNumberingValue", "Set Numbering Value", "Home › Paragraph › Numbering", |s, v| {
+        spec!("para.setNumberingValue", "Set Numbering Value", "Home › Paragraph › Numbering", |s, v| {
             let value = p::u64(v, "value").unwrap_or(1).clamp(0, 100_000) as u32;
             let f = s.sel.focus.clone();
             let n = s
@@ -313,11 +313,11 @@ pub fn specs() -> Vec<CommandSpec> {
             sel_result(s)
         })
         .params(r#"{"value": n}"#),
-        CommandSpec::new("para.defineBullet", "Define New Bullet", "Home › Paragraph › Bullets", |s, v| {
+        spec!("para.defineBullet", "Define New Bullet", "Home › Paragraph › Bullets", |s, v| {
             s.run("para.bullets", &json!({"kind": p::str(v, "char").unwrap_or("★")}))
         })
         .params(r#"{"char": string}"#),
-        CommandSpec::new("para.defineNumber", "Define New Number Format", "Home › Paragraph › Numbering", |s, v| {
+        spec!("para.defineNumber", "Define New Number Format", "Home › Paragraph › Numbering", |s, v| {
             let fmt = wordcraft_doc::section::NumFormat::from_ooxml(p::str(v, "format").unwrap_or("decimal"));
             let text = p::str(v, "text").unwrap_or("%1.").to_string();
             let start = p::u64(v, "start").unwrap_or(1).min(100_000) as u32;
@@ -336,18 +336,18 @@ pub fn specs() -> Vec<CommandSpec> {
             })
         })
         .params(r#"{"format": "decimal|upperRoman|lowerLetter…", "text"?: "%1.", "start"?: n}"#),
-        CommandSpec::new("review.language", "Language", "Review › Language", language).params(
+        spec!("review.language", "Language", "Review › Language", language).params(
             r#"{"lang"?: "en-US|en-GB|pl-PL|fr-FR|…" (BCP 47; default en-US), "noProof"?: bool, "detect"?: bool (detect language automatically, a preference), "default"?: bool (also the document's default and the saved language for future blank documents)}"#,
         ),
-        CommandSpec::new("review.showMarkup", "Show Markup", "Review › Tracking", |s, v| {
+        spec!("review.showMarkup", "Show Markup", "Review › Tracking", |s, v| {
             s.view.show_markup = p::bool(v, "value").unwrap_or(!s.view.show_markup);
             s.relayout();
             Ok(json!({"value": s.view.show_markup}))
         })
         .pure(),
-        CommandSpec::new("review.editor", "Editor", "Home › Editor", |s, v| s.run("review.spelling", v)).pure(),
-        CommandSpec::new("select.similar", "Select Text with Similar Formatting", "Home › Editing › Select", select_similar).pure(),
-        CommandSpec::new("select.extend", "Extend Selection", "Editing › Selection", |s, _| {
+        spec!("review.editor", "Editor", "Home › Editor", |s, v| s.run("review.spelling", v)).pure(),
+        spec!("select.similar", "Select Text with Similar Formatting", "Home › Editing › Select", select_similar).pure(),
+        spec!("select.extend", "Extend Selection", "Editing › Selection", |s, _| {
             // F8 grows the selection: word → sentence → paragraph → document.
             let (a, b) = s.sel.ordered();
             let para_len = s.doc.para_at(&a).map(|x| x.len()).unwrap_or(0);
@@ -363,23 +363,23 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .key("F8")
         .pure(),
-        CommandSpec::new("design.effects", "Effects", "Design › Document Formatting", |s, v| {
+        spec!("design.effects", "Effects", "Design › Document Formatting", |s, v| {
             s.doc.settings.theme_name =
                 format!("{} ({})", s.doc.settings.theme_name.split(" (").next().unwrap_or("Craft"), p::str(v, "name").unwrap_or("Subtle"));
             sel_result(s)
         }),
-        CommandSpec::new("view.immersive", "Immersive Reader", "View › Immersive", |s, _| {
+        spec!("view.immersive", "Immersive Reader", "View › Immersive", |s, _| {
             s.view.read_mode = !s.view.read_mode;
             Ok(json!({"value": s.view.read_mode}))
         })
         .pure(),
-        CommandSpec::new("view.vertical", "Vertical", "View › Page Movement", |s, _| {
+        spec!("view.vertical", "Vertical", "View › Page Movement", |s, _| {
             s.view.multi_page = false;
             s.view.fit.clear();
             Ok(json!({"pageMovement": "vertical"}))
         })
         .pure(),
-        CommandSpec::new("view.sideToSide", "Side to Side", "View › Page Movement", |s, _| {
+        spec!("view.sideToSide", "Side to Side", "View › Page Movement", |s, _| {
             s.view.multi_page = true;
             s.view.single_column = false;
             s.view.fit = "multiplePages".into();

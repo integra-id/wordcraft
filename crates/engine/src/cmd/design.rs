@@ -49,43 +49,43 @@ pub const THEMES: &[(&str, &str, &str, [Rgb; 6])] = &[
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("design.theme", "Themes", "Design › Document Formatting", theme).params(r#"{"name": string}"#),
-        CommandSpec::new("design.themeFonts", "Fonts", "Design › Document Formatting", |s, v| {
+        spec!("design.theme", "Themes", "Design › Document Formatting", theme).params(r#"{"name": string}"#),
+        spec!("design.themeFonts", "Fonts", "Design › Document Formatting", |s, v| {
             let heading = p::req_str(v, "heading")?.to_string();
             let body = p::str(v, "body").unwrap_or(&heading).to_string();
             set_fonts(s, &heading, &body);
             sel_result(s)
         })
         .params(r#"{"heading": string, "body"?: string}"#),
-        CommandSpec::new("design.themeColors", "Colors", "Design › Document Formatting", |s, v| {
+        spec!("design.themeColors", "Colors", "Design › Document Formatting", |s, v| {
             let name = p::req_str(v, "name")?;
             let t = THEMES.iter().find(|t| t.0.eq_ignore_ascii_case(name)).ok_or_else(|| CmdError::Params(format!("unknown colours `{name}`")))?;
             set_accent(s, t.3[0]);
             sel_result(s)
         }),
-        CommandSpec::new("design.styleSet", "Style Set", "Design › Document Formatting", style_set)
+        spec!("design.styleSet", "Style Set", "Design › Document Formatting", style_set)
             .params(r#"{"name": "default|basic|lines|shaded|casual|centered|minimalist|title"}"#),
-        CommandSpec::new("design.paragraphSpacing", "Paragraph Spacing", "Design › Document Formatting", para_spacing)
+        spec!("design.paragraphSpacing", "Paragraph Spacing", "Design › Document Formatting", para_spacing)
             .params(r#"{"value": "default|none|compact|tight|open|relaxed|double"}"#),
-        CommandSpec::new("design.scaleFontSizes", "Scale Font Sizes", "Design › Document Formatting", scale_font_sizes)
+        spec!("design.scaleFontSizes", "Scale Font Sizes", "Design › Document Formatting", scale_font_sizes)
             .params(r#"{"delta": pt (-1638..1638, not 0) | "percent": number (-99..1000, not 0; 10 = +10%)} (exactly one)"#),
-        CommandSpec::new("design.watermark", "Watermark", "Design › Page Background", watermark)
+        spec!("design.watermark", "Watermark", "Design › Page Background", watermark)
             .params(r#"{"text"?: string, "remove"?: bool, "diagonal"?: bool, "color"?: "RRGGBB"}"#),
-        CommandSpec::new("design.pageColor", "Page Color", "Design › Page Background", |s, v| {
+        spec!("design.pageColor", "Page Color", "Design › Page Background", |s, v| {
             s.doc.settings.page_color = p::str(v, "color").and_then(Rgb::parse);
             s.doc.settings.page_picture = None;
             sel_result(s)
         })
         .params(r#"{"color": "RRGGBB" | null}"#),
-        CommandSpec::new("design.pageBorders", "Page Borders", "Design › Page Background", page_borders).params(
+        spec!("design.pageBorders", "Page Borders", "Design › Page Background", page_borders).params(
             r#"{"kind"?: "box|none", "width"?: pt, "color"?: "RRGGBB", "style"?: "single|double|dotted|dashed|thick|triple|dotDash|wave", "sides"?: {"top"|"left"|"bottom"|"right": {"style"?, "width"?: pt, "color"?: "RRGGBB"} | null} (exactly these sides, instead of `kind`), "applyTo"?: "section|document"}"#,
         ),
-        CommandSpec::new("design.setDefault", "Set as Default", "Design › Document Formatting", |s, _| {
+        spec!("design.setDefault", "Set as Default", "Design › Document Formatting", |s, _| {
             s.status = "These settings will be used for new documents.".into();
             sel_result(s)
         })
         .pure(),
-        CommandSpec::new("design.themes", "Theme List", "Design › Document Formatting", |_, _| {
+        spec!("design.themes", "Theme List", "Design › Document Formatting", |_, _| {
             Ok(json!(THEMES.iter().map(|t| t.0).collect::<Vec<_>>()))
         })
         .pure(),
