@@ -97,6 +97,34 @@ Rust enables by default (bulk memory, sign extension and others, `data-wasm-opt-
 `index.html`); without them `wasm-opt` rejects the module. Serve the file compressed (see above):
 Brotli makes the download about a third of the raw size.
 
+## Opening a document from an address
+
+`?url=` (or its alias `?src=`; `?url=` wins if both are given) opens a document when the page
+starts, as if it had been picked in File › Open:
+
+```
+https://example.com/wordcraft/?url=/files/report.docx
+https://example.com/wordcraft/?url=https%3A%2F%2Fcdn.example.org%2Fminutes.odt&name=Minutes.odt
+<iframe src="https://example.com/wordcraft/?src=../docs/handbook.docx" ...>
+```
+
+- The address may be relative (resolved against the viewer page) or absolute. Only `http:`,
+  `https:` and `blob:` addresses are fetched; `javascript:`, `data:`, `file:` and others are
+  refused. Percent-encode an address that has its own `?` or `&` (`encodeURIComponent`).
+- The document is named after `?name=` if given, else the address's last path segment
+  (decoded, without the query), else `document.docx`. The name's extension picks the importer;
+  without one the format is told from the content.
+- Cookies are sent only to the viewer's own origin (`credentials: same-origin`).
+- **CORS:** a file on another origin is readable only if its server sends
+  `Access-Control-Allow-Origin` naming the viewer's origin (or `*`), for example in nginx
+  `add_header Access-Control-Allow-Origin https://example.com;`. Without it the browser blocks
+  the download and the viewer says so.
+- While it downloads, the viewer shows *Opening report.docx…*. A network or CORS failure, an HTTP
+  error (404…) or a file WordCraft can't open is shown on the page and on the status bar and
+  logged to the console. Documents larger than 512 MB are refused.
+- `?url=` takes precedence over `?sample`, and is ignored with `?host=parent` (the parent page
+  sends the document then).
+
 ## Embedding in a page (iframe)
 
 ```html
@@ -129,6 +157,8 @@ WordCraft renders with wgpu. It uses **WebGPU** when the browser has it and fall
 |---|---|
 | *(none)* | WebGPU if available, otherwise WebGL2 |
 | `?webgl` | Force the WebGL2 backend (useful when a WebGPU driver misbehaves) |
+| `?sample` | Open the sample document |
+| `?url=ADDRESS` / `?src=ADDRESS` (`&name=NAME`) | Open the document at that address (see *Opening a document from an address*) |
 
 For example: `<iframe src="https://example.com/wordcraft/?webgl" ...>`.
 

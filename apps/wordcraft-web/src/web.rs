@@ -14,6 +14,7 @@ const DOC_EXTS: &[&str] =
 const IMAGE_EXTS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "bmp", "wmf", "emf"];
 const RECIPIENT_EXTS: &[&str] = wordcraft_engine::cmd::mailings::RECIPIENT_EXTENSIONS;
 mod font_store;
+mod open_url;
 const CANVAS_ID: &str = "wordcraft_canvas";
 const LOADING_ID: &str = "wordcraft_loading";
 
@@ -35,6 +36,9 @@ pub fn start() {
         // what it saves (`host`). That page guards leaving it, so this one doesn't.
         let bridge = if query_param("host").as_deref() == Some("parent") { crate::host::Bridge::new() } else { None };
         let app_bridge = bridge.clone();
+        // `?url=` (or its alias `?src=`): a document to fetch and open; not in host mode, where
+        // the parent sends the document.
+        let address = if bridge.is_none() { crate::url_open::requested(query_param("url"), query_param("src")) } else { None };
         let dirty = Rc::new(Cell::new(false));
         let saves = AsyncSaves::default();
         if bridge.is_none()
@@ -68,8 +72,9 @@ pub fn start() {
                     // The browser's locale picks the new document's paper, the units and the
                     // decimal separator (#838).
                     let region = wordcraft_ui_egui::i18n::system_region();
-                    // In host mode the parent sends the document to edit; no sample meanwhile.
-                    let sample = app_bridge.is_none() && query().contains("sample");
+                    // In host mode the parent sends the document to edit, and `?url=` names one to
+                    // fetch: no sample meanwhile.
+                    let sample = app_bridge.is_none() && address.is_none() && query_param("sample").is_some();
                     let doc = if sample { wordcraft_engine::sample::sample_document() } else { wordcraft_engine::blank_document(&region) };
                     let mut session = Session::new(doc);
                     session.system_region = region;
@@ -110,7 +115,9 @@ pub fn start() {
                         crate::host::Bridge::set_author(&mut app, &author);
                         prefs.keep_own_author(&app.session.author, &own);
                     }
-                    Ok(Box::new(WebShell { app, inbox, messages, prefs }))
+                    let url_open =
+                        address.as_deref().map(|a| open_url::UrlOpen::start(a, query_param("name").as_deref(), inbox.clone(), cc.egui_ctx.clone()));
+                    Ok(Box::new(WebShell { app, inbox, messages, prefs, url_open }))
                 }),
             )
             .await;
@@ -213,6 +220,8 @@ struct WebShell {
     inbox: Inbox,
     messages: Rc<RefCell<Vec<String>>>,
     prefs: crate::prefs::PrefsSync,
+    /// `?url=`: the document being fetched and opened.
+    url_open: Option<open_url::UrlOpen>,
 }
 
 fn local_storage() -> Option<web_sys::Storage> {
@@ -234,6 +243,9 @@ impl eframe::App for WebShell {
             self.app.status(msg);
         }
         self.app.logic(ctx);
+        if let Some(open) = &self.url_open {
+            open.after_logic(&mut self.app);
+        }
         // Store changed preferences straight away: a reload or closed tab runs no exit code (#2132).
         if let Some(json) = self.prefs.changed(&self.app) {
             match local_storage() {
@@ -276,6 +288,9 @@ impl eframe::App for WebShell {
             }
         }
         self.app.ui(ui);
+        if let Some(open) = &self.url_open {
+            open.show(&self.app, ui.ctx());
+        }
     }
 }
 

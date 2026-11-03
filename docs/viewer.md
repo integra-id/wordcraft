@@ -70,7 +70,12 @@ history and dirty flag are unchanged.
   and starts empty (`WordApp::start_empty`) when given nothing to open.
 - Web app (`apps/wordcraft-web`): sets `session.viewer = true` too and starts empty
   (`?sample` opens the sample). Open (File › Open, drag and drop, `?host=parent`) reads the
-  file in the browser; Export, PDF and Print download the result. Build it small with
+  file in the browser, and `?url=ADDRESS` (alias `?src=`, optional `&name=`) fetches one at
+  start-up: `index.html?url=/files/report.docx`, or
+  `index.html?url=https%3A%2F%2Fcdn.example.org%2Fa.odt`, whose server must then send
+  `Access-Control-Allow-Origin` (CORS). Only http, https and blob addresses; `?url=` wins over
+  `?sample`; failures (network, CORS, HTTP errors, unknown formats) show on the empty page
+  (`apps/wordcraft-web/src/web/open_url.rs`, `packaging/web/README.md`). Export, PDF and Print download the result. Build it small with
   `trunk build --release --cargo-profile web` (`packaging/web/README.md`).
 - The `editor` feature of `wordcraft-ui-egui` (on for the desktop app, off for the web app):
   without it `viewer::EDITOR` is false, `WordApp::is_viewer` is always true and `WordApp::new`
