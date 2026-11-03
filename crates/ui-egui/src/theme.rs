@@ -539,9 +539,61 @@ pub fn font_definitions(prefer_hans: bool, system_cjk: bool) -> FontDefinitions 
     font_definitions_language(prefer_hans, false, false, system_cjk)
 }
 
+/// egui's default faces with their scale in egui's `FontDefinitions::default`, in egui's fallback
+/// order. A build without the `egui-fonts` feature (the web viewer) compiles none of them in but
+/// adds them as they arrive ([`add_egui_default_face`]).
+pub const EGUI_DEFAULT_FACES: [(&str, f32); 5] =
+    [("Hack", 1.0), ("Ubuntu-Light", 1.0), ("egui-icons", 0.90), ("NotoEmoji-Regular", 0.81), ("emoji-icon-font", 0.90)];
+
+/// The egui default faces added so far without the `egui-fonts` feature.
+static LATE_FACES: std::sync::Mutex<Vec<(&'static str, &'static [u8])>> = std::sync::Mutex::new(Vec::new());
+static LATE_FACES_GENERATION: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
+/// Add one of egui's default faces ([`EGUI_DEFAULT_FACES`], by name) to a build that doesn't
+/// compile them in. The interface fonts are installed again at the next frame
+/// ([`egui_default_faces_generation`]). An unknown name is ignored.
+pub fn add_egui_default_face(name: &str, bytes: &'static [u8]) {
+    let Some(&(name, _)) = EGUI_DEFAULT_FACES.iter().find(|(n, _)| *n == name) else { return };
+    let mut late = LATE_FACES.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    if !late.iter().any(|(n, _)| *n == name) {
+        late.push((name, bytes));
+        LATE_FACES_GENERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+/// Changes whenever [`add_egui_default_face`] adds a face.
+pub fn egui_default_faces_generation() -> u32 {
+    LATE_FACES_GENERATION.load(std::sync::atomic::Ordering::Relaxed)
+}
+
+/// Start from egui's default fonts: the compiled-in ones, or else the faces added so far, in
+/// the same families, order and scale.
+fn egui_default_fonts() -> FontDefinitions {
+    let mut fonts = FontDefinitions::default();
+    if fonts.families.get(&FontFamily::Proportional).is_some_and(|f| !f.is_empty()) {
+        return fonts;
+    }
+    add_late_faces(&mut fonts, &LATE_FACES.lock().unwrap_or_else(std::sync::PoisonError::into_inner));
+    fonts
+}
+
+fn add_late_faces(fonts: &mut FontDefinitions, late: &[(&'static str, &'static [u8])]) {
+    for (name, scale) in EGUI_DEFAULT_FACES {
+        let Some((_, bytes)) = late.iter().find(|(n, _)| *n == name) else { continue };
+        let data = FontData::from_static(bytes).tweak(egui::FontTweak { scale, ..Default::default() });
+        fonts.font_data.insert(name.into(), Arc::new(data));
+        for fam in [FontFamily::Monospace, FontFamily::Proportional] {
+            if fam == FontFamily::Proportional && name == "Hack" {
+                continue;
+            }
+            fonts.families.entry(fam).or_default().push(name.into());
+        }
+    }
+}
+
 /// The interface fonts, ordered for the preferred CJK writing system.
 pub fn font_definitions_language(prefer_hans: bool, prefer_korean: bool, prefer_hant: bool, system_cjk: bool) -> FontDefinitions {
-    let mut fonts = FontDefinitions::default();
+    let mut fonts = egui_default_fonts();
     // The bundled document faces' statics: one copy of each file in the binary.
     let add = |fonts: &mut FontDefinitions, name: &str, bytes: &'static [u8]| {
         fonts.font_data.insert(name.into(), Arc::new(FontData::from_static(bytes)));
@@ -948,6 +1000,28 @@ mod tests {
     /// explicitly (kittest's own dev-dependencies do not propagate). WordCraft inserts Inter at
     /// the front and SourceSans after egui's complete default fallback block, including the
     /// monochrome emoji faces. Production keeps only `default_fonts` through eframe.
+    /// Without egui's compiled-in fonts (the web viewer), the faces added later take the places
+    /// and scales egui's `FontDefinitions::default` gives them.
+    #[test]
+    fn late_egui_faces_follow_egui_default_order() {
+        let want = egui::FontDefinitions::default();
+        // Added in another order than egui's.
+        let late: Vec<(&'static str, &'static [u8])> = super::EGUI_DEFAULT_FACES
+            .iter()
+            .rev()
+            .map(|(name, _)| {
+                let bytes: &'static [u8] = Box::leak((*want.font_data[*name].font).as_ref().to_vec().into_boxed_slice());
+                (*name, bytes)
+            })
+            .collect();
+        let mut got = egui::FontDefinitions::empty();
+        super::add_late_faces(&mut got, &late);
+        assert_eq!(got.families, want.families);
+        for (name, data) in &want.font_data {
+            assert_eq!(got.font_data[name].tweak, data.tweak, "{name}");
+        }
+    }
+
     #[test]
     fn interface_font_order_keeps_test_default_fonts_explicit() {
         let defs = super::font_definitions(false, false);

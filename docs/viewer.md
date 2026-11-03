@@ -87,6 +87,10 @@ history and dirty flag are unchanged.
   fonts and Source Sans 3 Regular are compiled in; the other eight bundled document faces
   (`wordcraft_fonts::FETCHED_FILES`) are fetched from `fonts/` without holding up start-up and
   join the font database in bundled order (`FontDb::add_fetched`), which relays documents out.
+- egui's default faces (`wordcraft-ui-egui` feature `egui-fonts`, off for the web app): Hack,
+  Ubuntu Light, egui's icons and the monochrome emoji are fetched from `egui-fonts/` after start-up
+  (`EGUI_FACE_FILES`) and take egui's places in the interface fonts as they arrive
+  (`theme::add_egui_default_face`). Until then, symbols and emoji only they have draw as boxes.
 - Screenshots: `{"viewer": true}` on the first line of a `ui_shot` script
   (`cargo run -p wordcraft-ui-egui --example ui_shot -- script.jsonl`).
 

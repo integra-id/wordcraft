@@ -533,6 +533,9 @@ pub struct WordApp {
     fonts_hant: bool,
     /// Whether the installed UI fonts include an installed CJK fallback font (#241).
     fonts_system_cjk: bool,
+    /// [`theme::egui_default_faces_generation`] when the UI fonts were installed: egui's default
+    /// faces that arrived since are installed with the next frame (the web viewer fetches them).
+    fonts_egui_generation: u32,
     /// CJK text is (about to be) on screen in a non-CJK interface, e.g. the language names in
     /// File ▸ Options: load the installed CJK fallback font if no embedded face covers it.
     pub(crate) want_system_cjk: bool,

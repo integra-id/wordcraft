@@ -19,6 +19,8 @@
   <link rel="preload" href="fonts/SourceSerif4-Semibold.ttf" as="fetch" crossorigin>
   <link rel="preload" href="fonts/SourceSerif4-Bold.ttf" as="fetch" crossorigin>
   <link rel="preload" href="fonts/SourceSerif4-BoldIt.ttf" as="fetch" crossorigin>
+  <!-- egui's default faces, fetched after the app starts (web::EGUI_FACE_FILES), not preloaded. -->
+  <link data-trunk rel="copy-dir" href="assets/egui-fonts" />
   <style>
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #e6e6e6; }
     #wordcraft_canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }

@@ -151,11 +151,13 @@ impl WordApp {
         }
     }
 
-    /// Install the interface fonts when the language, the CJK fallback, or a caption fallback
-    /// face has changed since the last install.
+    /// Install the interface fonts when the language, the CJK fallback, a caption fallback face or
+    /// egui's late default faces have changed since the last install.
     pub(super) fn install_ui_fonts(&mut self, ctx: &egui::Context, lang: i18n::Lang) {
         let system_cjk = self.fonts_system_cjk || self.want_system_cjk || lang.uses_cjk();
+        let egui_generation = theme::egui_default_faces_generation();
         if !self.styled
+            || egui_generation != self.fonts_egui_generation
             || lang.prefers_hans() != self.fonts_hans
             || lang.prefers_korean() != self.fonts_korean
             || lang.prefers_hant() != self.fonts_hant
@@ -175,6 +177,7 @@ impl WordApp {
             self.fonts_korean = lang.prefers_korean();
             self.fonts_hant = lang.prefers_hant();
             self.fonts_system_cjk = system_cjk;
+            self.fonts_egui_generation = egui_generation;
             // Mod with -, = and 0 are Word shortcuts (optional hyphen, subscript, paragraph spacing);
             // egui's keyboard zoom would also scale the whole window on them. Zoom is View › Zoom.
             // egui quits on Command-Q, which is Ctrl+Q off the Mac: Word's Reset Paragraph

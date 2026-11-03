@@ -9,11 +9,15 @@ description = "WordCraft egui front end (Word-style ribbon UI); swappable: nothi
 workspace = true
 
 [features]
-default = ["editor"]
+default = ["editor", "egui-fonts"]
 # The editing interface: the ribbon, the editing dialogs, the mini toolbar, keytips … Without it
 # the app is always the WordCraft Viewer (`viewer::EDITOR`), and the build leaves that code out,
 # with the engine's editing command handlers.
 editor = ["wordcraft-engine/editor"]
+# egui's default faces (Hack, Ubuntu Light, its icons and the monochrome emoji) compiled in.
+# Without it the app adds them as they arrive (`theme::add_egui_default_face`): the web viewer
+# fetches them after it starts.
+egui-fonts = ["egui/default_fonts", "egui/monochrome_emoji_fonts"]
 
 [dependencies]
 craft-ui = { git = "https://github.com/storytold/craft-libs", rev = "92d392cff132eaf53e13afff77f38b5c11b73aa0" }
@@ -31,7 +35,7 @@ wordcraft-layout = { workspace = true }
 wordcraft-render = { workspace = true }
 wordcraft-engine = { workspace = true }
 wordcraft-zotero = { workspace = true }
-egui = { workspace = true, features = ["default_fonts", "monochrome_emoji_fonts"] }
+egui = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }

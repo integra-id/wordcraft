@@ -30,6 +30,7 @@ pub fn start() {
         };
         // The document fonts arrive while the app starts (`add_document_fonts`).
         let document_fonts = fetch_fonts();
+        let egui_faces = fetch_egui_faces();
         // `?host=parent`: a same-origin page framing WordCraft opens documents in it and stores
         // what it saves (`host`). That page guards leaving it, so this one doesn't.
         let bridge = if query_param("host").as_deref() == Some("parent") { crate::host::Bridge::new() } else { None };
@@ -58,6 +59,7 @@ pub fn start() {
                     // Fonts the user added on an earlier visit (#582); the app notices them arrive.
                     font_store::load_all(cc.egui_ctx.clone());
                     add_document_fonts(document_fonts, cc.egui_ctx.clone());
+                    add_egui_faces(egui_faces, cc.egui_ctx.clone());
                     let inbox: Inbox = Inbox::default();
                     let pasted: Inbox = Inbox::default();
                     if let Err(e) = listen_for_pasted_pictures(pasted.clone(), cc.egui_ctx.clone()) {
@@ -149,6 +151,29 @@ fn add_document_fonts(pending: Vec<PendingFont>, ctx: egui::Context) {
         for (name, response) in pending {
             if add_font(name, response).await {
                 ctx.request_repaint();
+            }
+        }
+    });
+}
+
+fn fetch_egui_faces() -> Vec<PendingFont> {
+    let Some(window) = web_sys::window() else { return Vec::new() };
+    crate::EGUI_FACE_FILES
+        .iter()
+        .map(|(name, file)| (*name, wasm_bindgen_futures::JsFuture::from(window.fetch_with_str(&format!("egui-fonts/{file}")))))
+        .collect()
+}
+
+/// Add egui's default faces as they arrive; the interface fonts are installed again with each.
+fn add_egui_faces(pending: Vec<PendingFont>, ctx: egui::Context) {
+    wasm_bindgen_futures::spawn_local(async move {
+        for (name, response) in pending {
+            match fetch_bytes(response).await {
+                Ok(bytes) => {
+                    wordcraft_ui_egui::theme::add_egui_default_face(name, Box::leak(bytes.into_boxed_slice()));
+                    ctx.request_repaint();
+                }
+                Err(e) => log::error!("interface font {name} didn't load: {e}"),
             }
         }
     });
