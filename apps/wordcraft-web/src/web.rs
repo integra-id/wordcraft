@@ -83,10 +83,17 @@ pub fn start() {
                     session.viewer = true;
                     let messages = Rc::new(RefCell::new(Vec::new()));
                     let mut services = services(inbox.clone(), cc.egui_ctx.clone(), dirty, saves.clone(), messages.clone());
+                    let config = crate::host::PendingConfig::default();
                     if let Some(bridge) = &app_bridge {
-                        bridge.connect(&mut services, inbox.clone(), cc.egui_ctx.clone());
+                        bridge.connect(&mut services, inbox.clone(), config.clone(), cc.egui_ctx.clone());
                     }
                     let mut app = WordApp::new(session, services);
+                    // `?hide=` and `?disable=`: features the embedding page leaves out or turns off.
+                    let (features, unknown) = crate::viewer_features::parse(query_param("hide").as_deref(), query_param("disable").as_deref());
+                    if let Some(w) = unknown {
+                        log::warn!("{w}");
+                    }
+                    app.set_features(features);
                     // Pasted pictures wait apart from dropped files: the app inserts one only when the page is the edit target (#1349).
                     app.services.pasted = Some(pasted);
                     app.autosave = false;
@@ -117,7 +124,8 @@ pub fn start() {
                     }
                     let url_open =
                         address.as_deref().map(|a| open_url::UrlOpen::start(a, query_param("name").as_deref(), inbox.clone(), cc.egui_ctx.clone()));
-                    Ok(Box::new(WebShell { app, inbox, messages, prefs, url_open }))
+                    let config = app_bridge.is_some().then_some(config);
+                    Ok(Box::new(WebShell { app, inbox, messages, prefs, url_open, config }))
                 }),
             )
             .await;
@@ -222,6 +230,8 @@ struct WebShell {
     prefs: crate::prefs::PrefsSync,
     /// `?url=`: the document being fetched and opened.
     url_open: Option<open_url::UrlOpen>,
+    /// `?host=parent`: features the parent hides or turns off (`wordcraft:config`), waiting.
+    config: Option<crate::host::PendingConfig>,
 }
 
 fn local_storage() -> Option<web_sys::Storage> {
@@ -241,6 +251,14 @@ impl eframe::App for WebShell {
         let msgs = std::mem::take(&mut *self.messages.borrow_mut());
         for msg in msgs {
             self.app.status(msg);
+        }
+        // `wordcraft:config` from the parent replaces the URL's `hide` and `disable` lists.
+        if let Some((hide, disable)) = self.config.as_ref().and_then(|c| c.borrow_mut().take()) {
+            let (features, unknown) = crate::viewer_features::parse(Some(&hide), Some(&disable));
+            if let Some(w) = unknown {
+                log::warn!("{w}");
+            }
+            self.app.set_features(features);
         }
         self.app.logic(ctx);
         if let Some(open) = &self.url_open {
@@ -271,7 +289,11 @@ impl eframe::App for WebShell {
         // `run_logic` tick that still sees the previous shown frame's RawInput.
         if ui.ctx().current_pass_index() == 0 {
             let ctx = ui.ctx().clone();
-            let dropped = ctx.input_mut(|i| std::mem::take(&mut i.raw.dropped_files));
+            let mut dropped = ctx.input_mut(|i| std::mem::take(&mut i.raw.dropped_files));
+            // A drop opens a file: not when the page turned Open off (`?hide=open`, `?disable=open`).
+            if !self.app.allows(wordcraft_ui_egui::features::Feature::Open) {
+                dropped.clear();
+            }
             for f in dropped {
                 let inbox = self.inbox.clone();
                 let ctx = ctx.clone();

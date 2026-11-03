@@ -14,9 +14,13 @@
 //! `&name=` sets the file name (else the address's last segment). Another origin must allow it
 //! with `Access-Control-Allow-Origin` (CORS). `?url=` takes precedence over `?sample`, and is
 //! ignored with `?host=`.
+//! `?hide=open,export,print` and `?disable=pdf` hide or grey out viewer features
+//! (`viewer_features`, `wordcraft_ui_egui::features`; names and examples in
+//! packaging/web/README.md).
 //! `?host=parent` (inside an `<iframe>`) talks to a same-origin parent page instead: it sends the
 //! document to open and stores what WordCraft saves (`host`), and `&author=` names the user for
-//! comments and tracked changes.
+//! comments and tracked changes; its `wordcraft:config` message replaces the `hide` and
+//! `disable` lists.
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
 #[cfg(any(target_arch = "wasm32", test))]
@@ -25,6 +29,8 @@ mod prefs;
 mod save_fallback;
 #[cfg(any(target_arch = "wasm32", test))]
 mod url_open;
+#[cfg(any(target_arch = "wasm32", test))]
+mod viewer_features;
 
 #[cfg(target_arch = "wasm32")]
 mod host;
