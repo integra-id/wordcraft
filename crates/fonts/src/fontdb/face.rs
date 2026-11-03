@@ -14,7 +14,7 @@ pub fn bundled() -> &'static [&'static [u8]] {
 }
 
 pub(super) static BUNDLED: &[&[u8]] = &[
-    include_bytes!("../../../../assets/fonts/SourceSans3-Regular.ttf"),
+    SOURCE_SANS_REGULAR,
     include_bytes!("../../../../assets/fonts/SourceSans3-Semibold.ttf"),
     include_bytes!("../../../../assets/fonts/SourceSans3-Bold.ttf"),
     include_bytes!("../../../../assets/fonts/SourceSans3-It.ttf"),
@@ -23,11 +23,24 @@ pub(super) static BUNDLED: &[&[u8]] = &[
     include_bytes!("../../../../assets/fonts/SourceSerif4-Semibold.ttf"),
     include_bytes!("../../../../assets/fonts/SourceSerif4-Bold.ttf"),
     include_bytes!("../../../../assets/fonts/SourceSerif4-BoldIt.ttf"),
-    include_bytes!("../../../../assets/fonts/Inter-Regular.ttf"),
-    include_bytes!("../../../../assets/fonts/Inter-Medium.ttf"),
-    include_bytes!("../../../../assets/fonts/Inter-SemiBold.ttf"),
-    include_bytes!("../../../../assets/fonts/JetBrainsMono-Regular.ttf"),
+    INTER_REGULAR,
+    INTER_MEDIUM,
+    INTER_SEMIBOLD,
+    JETBRAINS_MONO_REGULAR,
 ];
+
+/// Inter Regular, a bundled face the interface also draws with. The interface fonts take these
+/// statics instead of their own `include_bytes!`, so the binary (and the web download) holds
+/// one copy of each file.
+pub static INTER_REGULAR: &[u8] = include_bytes!("../../../../assets/fonts/Inter-Regular.ttf");
+/// Inter Medium; see [`INTER_REGULAR`].
+pub static INTER_MEDIUM: &[u8] = include_bytes!("../../../../assets/fonts/Inter-Medium.ttf");
+/// Inter SemiBold; see [`INTER_REGULAR`].
+pub static INTER_SEMIBOLD: &[u8] = include_bytes!("../../../../assets/fonts/Inter-SemiBold.ttf");
+/// JetBrains Mono Regular; see [`INTER_REGULAR`].
+pub static JETBRAINS_MONO_REGULAR: &[u8] = include_bytes!("../../../../assets/fonts/JetBrainsMono-Regular.ttf");
+/// Source Sans 3 Regular; see [`INTER_REGULAR`].
+pub static SOURCE_SANS_REGULAR: &[u8] = include_bytes!("../../../../assets/fonts/SourceSans3-Regular.ttf");
 
 #[derive(Clone)]
 pub(super) enum FontBytes {
