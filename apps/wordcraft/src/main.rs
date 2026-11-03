@@ -297,7 +297,7 @@ const USAGE: &str = "\
 wordcraft — WordCraft Viewer: view, print and export documents (read-only)
 
 USAGE:
-  wordcraft [--sample] [--control PORT] [FILE…]
+  wordcraft [--sample] [--control PORT] [--hide LIST] [--disable LIST] [FILE…]
 
 Opens .docx, .docm, .dotx, .doc, .odt, .rtf, .html, .md, .tex and .txt files read-only.
 File › Export (or the toolbar's PDF and Export buttons) saves a copy as PDF, DOCX, ODT, RTF,
@@ -308,9 +308,30 @@ OPTIONS:
   --sample            open the sample document
   --control PORT      start the localhost control server on PORT, for agents and scripts
                       (or set WORDCRAFT_CONTROL_PORT); see docs/control-protocol.md
+  --hide LIST         leave features out of the window, LIST comma-separated (also
+                      --hide=LIST): open, export, pdf, print, spelling, grammar,
+                      spellcheck (both), find, pagenav, zoom, views, copy, contextmenu,
+                      file, options, close, wordcount, about, toolbar, statusbar;
+                      e.g. --hide=open,export,print
+  --disable LIST      show those features greyed out and turned off (also --disable=LIST);
+                      with either, the feature's shortcuts and commands don't run either
   --version           print the version
   -h, --help          print this help
 ";
+
+/// `--hide LIST`, `--hide=LIST`, `--disable LIST`, `--disable=LIST`: whether the flag hides
+/// (rather than disables), and the list when it is on the same argument. `None` for any other.
+fn feature_flag(a: &str) -> Option<(bool, Option<&str>)> {
+    let (flag, list) = match a.split_once('=') {
+        Some((f, l)) => (f, Some(l)),
+        None => (a, None),
+    };
+    match flag {
+        "--hide" => Some((true, list)),
+        "--disable" => Some((false, list)),
+        _ => None,
+    }
+}
 
 /// The commit the build came from (short), or `dev`.
 fn build_sha() -> &'static str {
@@ -392,8 +413,22 @@ fn main() -> eframe::Result {
     // Only macOS (Finder / LaunchServices) adds these; elsewhere `-NS…` could be a real file name.
     let args = if cfg!(target_os = "macos") { without_launch_args(args) } else { args };
     let mut bad_control: Option<Option<String>> = None;
+    // `--hide` and `--disable` (`wordcraft_ui_egui::features`), repeatable.
+    let (mut hide, mut disable) = (Vec::new(), Vec::new());
     let mut args = args.into_iter().peekable();
     while let Some(a) = args.next() {
+        if let Some((hides, list)) = feature_flag(&a) {
+            let Some(list) = list.map(str::to_string).or_else(|| args.next()) else {
+                let _ = std::io::Write::write_fmt(&mut std::io::stderr(), format_args!("wordcraft: {a} needs a list of features\n"));
+                std::process::exit(2);
+            };
+            if hides {
+                hide.push(list)
+            } else {
+                disable.push(list)
+            }
+            continue;
+        }
         match a.as_str() {
             // A flag after `--control` stays a flag; a bad or missing port is an error (#1426).
             "--control" => {
@@ -415,6 +450,13 @@ fn main() -> eframe::Result {
             }
             _ => files.push(a),
         }
+    }
+    let (features, unknown) = wordcraft_ui_egui::features::ViewerFeatures::parse(&hide.join(","), &disable.join(","));
+    if !unknown.is_empty() {
+        let _ = std::io::Write::write_fmt(
+            &mut std::io::stderr(),
+            format_args!("wordcraft: ignoring unknown feature name(s): {} (see --help)\n", unknown.join(", ")),
+        );
     }
     // After the loop, so `--version` later on the line still wins. Unlike `eprintln!`, never panics.
     if let Some(port) = bad_control {
@@ -442,7 +484,8 @@ fn main() -> eframe::Result {
             .with_app_id("ai.storyteller.wordcraft")
             .with_inner_size([1440.0, 920.0])
             .with_min_inner_size([760.0, 480.0])
-            .with_drag_and_drop(true)
+            // No "drop here" cursor when opening files is turned off (`--hide open`).
+            .with_drag_and_drop(features.enabled(wordcraft_ui_egui::features::Feature::Open))
             .with_fullsize_content_view(true)
             .with_titlebar_shown(false)
             .with_title_shown(false),
@@ -499,6 +542,7 @@ fn main() -> eframe::Result {
             app.set_startup_update_check(true);
             load_prefs(&mut app);
             load_user_dictionary(&mut app);
+            app.set_features(features);
             // Language packs from the suite's font store; an Install click is the person's own.
             wordcraft_engine::packs::use_font_store(true);
             // A region chosen in File › Options replaces the system's for the first blank
@@ -556,6 +600,19 @@ fn main() -> eframe::Result {
             )))
         }),
     )
+}
+
+#[cfg(test)]
+mod feature_flag_tests {
+    #[test]
+    fn hide_and_disable_take_their_list_after_an_equals_sign_or_next() {
+        assert_eq!(super::feature_flag("--hide=open,print"), Some((true, Some("open,print"))));
+        assert_eq!(super::feature_flag("--hide"), Some((true, None)));
+        assert_eq!(super::feature_flag("--disable=pdf"), Some((false, Some("pdf"))));
+        assert_eq!(super::feature_flag("--disable"), Some((false, None)));
+        assert_eq!(super::feature_flag("--hidden"), None);
+        assert_eq!(super::feature_flag("report.docx"), None);
+    }
 }
 
 // Not on macOS: APFS refuses file names that aren't valid UTF-8, so no such file can exist there.
