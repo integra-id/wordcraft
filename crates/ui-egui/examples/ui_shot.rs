@@ -12,7 +12,9 @@
 //! `{"demoPacks": true}` lists a few sample Language packs (installs only record themselves), and
 //! `{"demoPacks": "store"}` uses a real font store, as the desktop app does, in a new temporary
 //! folder rather than the person's, or in `"storeDir"` given on the same line (with
-//! `CRAFT_LANGUAGE_PACK_INDEX` for a local pack index).
+//! `CRAFT_LANGUAGE_PACK_INDEX` for a local pack index). `"viewer": true` on the first line shows
+//! the WordCraft Viewer's window (`docs/viewer.md`); with `"empty"` too it starts as the viewer
+//! does with nothing to open.
 
 use wordcraft_engine::Session;
 use wordcraft_ui_egui::{ControlRequest, Services, WordApp};
@@ -43,10 +45,15 @@ fn main() {
         Some(_) => wordcraft_engine::packs::set_backend(Some(std::sync::Arc::new(wordcraft_engine::packs::FixedBackend::sample()))),
         None => {}
     }
-    let mut app = WordApp::new(Session::new(doc), Services::default()).with_control(rx);
+    let viewer = lines.first().is_some_and(|l| l.get("viewer").is_some());
+    let mut session = Session::new(doc);
+    session.viewer = viewer;
+    let mut app = WordApp::new(session, Services::default()).with_control(rx);
     app.integrated_titlebar = true;
     if lines.first().is_some_and(|l| l.get("startScreen").is_some()) {
         app.start_screen();
+    } else if viewer && lines.first().is_some_and(|l| l.get("empty").is_some()) {
+        app.start_empty();
     }
     let w = lines.iter().find_map(|l| l.get("width").and_then(|v| v.as_f64())).unwrap_or(1440.0) as f32;
     let h = lines.iter().find_map(|l| l.get("height").and_then(|v| v.as_f64())).unwrap_or(900.0) as f32;

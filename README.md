@@ -51,6 +51,14 @@
   <br><sub><b>The Open Studio Handbook</b>, WordCraft's built-in sample: the ribbon, live Styles gallery, rulers and the Navigation pane.</sub>
 </p>
 
+> [!IMPORTANT]
+> **Branch `office-viewer`: WordCraft Viewer.** On this branch the `wordcraft` desktop app is a
+> read-only document viewer: it opens .docx, .doc, .odt, .rtf, .html, .md, .tex and .txt files,
+> prints them and exports them to PDF, DOCX, ODT, RTF, HTML, Markdown, LaTeX, text or PNG. The
+> ribbon and every editing command are turned off. Run it with
+> `cargo run --release -p wordcraft -- report.docx`; see [`docs/viewer.md`](docs/viewer.md) for
+> what it does, what was removed and how it is built.
+
 > [!NOTE]
 > **ArtCraft is a community of artists from all walks of life.** Painters, photographers,
 > filmmakers, illustrators, designers, animators, hobbyists, and people who picked up a pencil
@@ -136,8 +144,8 @@ The honest picture, area by area, is in [ROADMAP.md](ROADMAP.md), the
 ```sh
 git clone https://github.com/storytold/wordcraft
 cd wordcraft
-cargo run --release -p wordcraft -- --sample        # the desktop app with the sample document
-cargo run --release -p wordcraft -- report.docx     # open a document
+cargo run --release -p wordcraft -- --sample        # the viewer with the sample document
+cargo run --release -p wordcraft -- report.docx     # view a document (read-only; docs/viewer.md)
 ```
 
 The interface translations and the spelling and hyphenation data come from
