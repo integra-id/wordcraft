@@ -73,6 +73,8 @@ impl Session {
             file_name: _,
             // The custom dictionary file, like the file path: host wiring, not an edit.
             user_dict_path: _,
+            // App-wide policy, not an edit.
+            viewer: _,
             dirty,
             clipboard: _,
             // Like the clipboard: what the next paste can make a move of.
@@ -246,6 +248,11 @@ impl Session {
     /// Restrict Editing refuses outright. `None` when it can run (or doesn't exist).
     pub fn why_disabled(&self, id: &str) -> Option<&'static str> {
         let spec = self.registry.get(id)?;
+        if self.viewer
+            && let Some(why) = crate::viewer::refuses(id, spec.mutates)
+        {
+            return Some(why);
+        }
         (spec.enabled)(self).or_else(|| if spec.mutates { crate::cmd::protect::greyed_out(self, id, || self.protect_facts()) } else { None })
     }
 

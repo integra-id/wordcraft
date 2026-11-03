@@ -94,6 +94,7 @@ impl Session {
             file_name,
             user_dict_path: None,
             dirty,
+            viewer: false,
             clipboard: None,
             pending_move,
             clipboard_text: String::new(),

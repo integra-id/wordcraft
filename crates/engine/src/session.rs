@@ -58,6 +58,10 @@ pub struct Session {
     /// name, not document metadata, so it is not part of the document or its undo history.
     pub file_name: Option<String>,
     pub dirty: bool,
+    /// Viewer mode (`crate::viewer`): the session shows, prints and exports documents and
+    /// refuses every command that would edit them. App-wide, set by the host before it shows
+    /// anything; every open document is read only.
+    pub viewer: bool,
     /// Where the custom dictionary is kept on disk, if the host wired one up. Only the desktop
     /// app does: headless sessions (MCP, `wordcraft-cli run`), tests and the web build leave
     /// `None`, so an agent's words stay in memory and never change the person's dictionary.

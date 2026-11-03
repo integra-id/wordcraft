@@ -74,6 +74,12 @@ impl Session {
         let join = join
             || (equation_join && matches!(id, "equation.type" | "equation.backspace"))
             || (id == "text.insert" && ime_text_join.as_ref().is_some_and(|sel| sel == &self.sel));
+        // Viewer mode: nothing that edits the document runs, whoever asks (UI, control, MCP).
+        if self.viewer
+            && let Some(why) = crate::viewer::refuses(id, spec.mutates)
+        {
+            return Err(CmdError::Disabled(format!("{id}: {why}")));
+        }
         if let Some(why) = (spec.enabled)(self) {
             return Err(CmdError::Disabled(format!("{id}: {why}")));
         }
