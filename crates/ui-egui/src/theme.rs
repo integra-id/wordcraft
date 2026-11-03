@@ -546,11 +546,11 @@ pub fn font_definitions_language(prefer_hans: bool, prefer_korean: bool, prefer_
     let add = |fonts: &mut FontDefinitions, name: &str, bytes: &'static [u8]| {
         fonts.font_data.insert(name.into(), Arc::new(FontData::from_static(bytes)));
     };
-    add(&mut fonts, "Inter", wordcraft_fonts::INTER_REGULAR);
-    add(&mut fonts, "InterMedium", wordcraft_fonts::INTER_MEDIUM);
-    add(&mut fonts, "InterSemiBold", wordcraft_fonts::INTER_SEMIBOLD);
+    add(&mut fonts, "Inter", wordcraft_fonts::inter_regular());
+    add(&mut fonts, "InterMedium", wordcraft_fonts::inter_medium());
+    add(&mut fonts, "InterSemiBold", wordcraft_fonts::inter_semibold());
     add(&mut fonts, "SourceSans", wordcraft_fonts::SOURCE_SANS_REGULAR);
-    add(&mut fonts, "Mono", wordcraft_fonts::JETBRAINS_MONO_REGULAR);
+    add(&mut fonts, "Mono", wordcraft_fonts::jetbrains_mono_regular());
     if let Some(prop) = fonts.families.get_mut(&FontFamily::Proportional) {
         prop.insert(0, "Inter".into());
         prop.push("SourceSans".into());

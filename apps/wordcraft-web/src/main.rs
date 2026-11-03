@@ -32,3 +32,17 @@ fn main() {
 fn main() {
     eprintln!("wordcraft-web only runs in the browser: build it with `trunk build --release` in apps/wordcraft-web");
 }
+
+#[cfg(test)]
+mod tests {
+    /// `index.html` preloads exactly the fonts the app fetches (`web::fetch_fonts`), and Trunk
+    /// copies them next to the app.
+    #[test]
+    fn index_preloads_the_fetched_fonts() {
+        let html = include_str!("../index.html");
+        let preloaded: Vec<&str> =
+            html.lines().filter(|l| l.contains("rel=\"preload\"")).filter_map(|l| l.split("href=\"fonts/").nth(1)?.split('"').next()).collect();
+        assert_eq!(preloaded, wordcraft_fonts::FETCHED_FILES);
+        assert!(html.contains(r#"<link data-trunk rel="copy-dir" href="../../assets/fonts" />"#));
+    }
+}

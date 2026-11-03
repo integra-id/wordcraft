@@ -1,6 +1,6 @@
 #[cfg(not(target_arch = "wasm32"))]
 use super::face::HINT_STRIKE;
-use super::face::{BUNDLED, FALLBACK_FAMILY, FontBytes, FontFace, NEXT_ID};
+use super::face::{FALLBACK_FAMILY, FontBytes, FontFace, NEXT_ID, SOURCE_SANS_REGULAR};
 use super::{Arc, FileRef, Location, MetadataProvider, Ordering, Size, StringId};
 
 /// Is `f` an East Asian (Chinese, Japanese or Korean) font: do its OS/2 code pages say so
@@ -335,7 +335,7 @@ pub(crate) fn last_resort_face() -> Arc<FontFace> {
         // The font is compiled in (`include_bytes!`), so parsing it can't depend on input; the
         // `last_resort_face_parses` test proves it on every run.
         #[allow(clippy::expect_used)]
-        let face = make_face(FontBytes::Static(BUNDLED[0]), 0, FALLBACK_FAMILY.into(), "Regular".into(), FALLBACK_FAMILY.into(), Vec::new())
+        let face = make_face(FontBytes::Static(SOURCE_SANS_REGULAR), 0, FALLBACK_FAMILY.into(), "Regular".into(), FALLBACK_FAMILY.into(), Vec::new())
             .expect("the compiled-in Source Sans 3 Regular parses");
         Arc::new(face)
     })

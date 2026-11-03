@@ -8,6 +8,11 @@ description = "WordCraft fonts: font database (bundled OFL + system), metrics, g
 [lints]
 workspace = true
 
+[features]
+# The web viewer: only Source Sans 3 Regular is compiled in; the app fetches the other bundled
+# fonts (`FETCHED_FILES`) and hands them over with `provide_fetched` before it starts.
+fetched-fonts = []
+
 [dependencies]
 kurbo = { workspace = true }
 skrifa = { workspace = true }

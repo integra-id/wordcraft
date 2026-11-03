@@ -22,9 +22,12 @@ mod fallback_data;
 mod lookup;
 mod names;
 
-use face::{BUNDLED, FontBytes};
+#[cfg(test)]
+use face::BUNDLED;
+use face::FontBytes;
 pub use face::{
-    FALLBACK_FAMILY, FaceRef, FontFace, INTER_MEDIUM, INTER_REGULAR, INTER_SEMIBOLD, JETBRAINS_MONO_REGULAR, SOURCE_SANS_REGULAR, bundled,
+    FALLBACK_FAMILY, FETCHED_FILES, FaceRef, FontFace, INTERFACE_FILES, SOURCE_SANS_REGULAR, bundled, inter_medium, inter_regular, inter_semibold,
+    jetbrains_mono_regular,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use fallback_data::{CoverageIndex, SysFallback};
@@ -95,7 +98,7 @@ impl FontDb {
         let mut faces = Vec::new();
         let others = crate::CRAFT_FONTS.iter().filter(|f| !f.scripts.contains(&"Jpan"));
         let craft = crate::japanese_document_fonts().into_iter().chain(others).map(|f| f.bytes);
-        for data in BUNDLED.iter().copied().chain(craft) {
+        for data in bundled().iter().copied().chain(craft) {
             for f in enumerate_faces(data, MAX_FILE_FACES) {
                 if let Some(mut face) = make_face(FontBytes::Static(data), f.index, f.family, f.style, f.legacy, f.coords) {
                     face.local_names = f.local;
@@ -148,6 +151,42 @@ impl FontDb {
     pub fn global() -> &'static FontDb {
         static DB: std::sync::OnceLock<FontDb> = std::sync::OnceLock::new();
         DB.get_or_init(|| FontDb::with_font_dirs(system_font_dirs()))
+    }
+
+    /// Add bundled font file `name` (one of [`FETCHED_FILES`]) that the web viewer fetched
+    /// (`fetched-fonts`): its faces join the bundled ones, in the order the other builds have
+    /// them, and text laid out before it arrived lays out again ([`FontDb::generation`]). `false`
+    /// when `name` isn't one of those files, it arrived already, or it holds no usable face.
+    #[cfg(feature = "fetched-fonts")]
+    pub fn add_fetched(&self, name: &str, data: &'static [u8]) -> bool {
+        let Some(i) = FETCHED_FILES.iter().position(|f| *f == name) else { return false };
+        let Some(slot) = face::FETCHED.get(i) else { return false };
+        if slot.set(data).is_err() {
+            return false;
+        }
+        let new: Vec<Arc<FontFace>> = enumerate_faces(data, MAX_FILE_FACES)
+            .into_iter()
+            .filter_map(|f| {
+                let mut face = make_face(FontBytes::Static(data), f.index, f.family, f.style, f.legacy, f.coords)?;
+                face.local_names = f.local;
+                Some(Arc::new(face))
+            })
+            .collect();
+        if new.is_empty() {
+            return false;
+        }
+        {
+            let rank = |f: &FontFace| match &f.bytes {
+                FontBytes::Static(d) => face::bundled_rank(d),
+                FontBytes::Owned(_) => None,
+            };
+            let mut faces = self.faces.write().unwrap_or_else(|e| e.into_inner());
+            // After the bundled faces that come before this file, before every other face.
+            let at = faces.iter().take_while(|f| rank(f).is_some_and(|r| r <= i)).count();
+            faces.splice(at..at, new);
+        }
+        self.fonts_changed();
+        true
     }
 
     fn read_faces(&self) -> std::sync::RwLockReadGuard<'_, Vec<Arc<FontFace>>> {

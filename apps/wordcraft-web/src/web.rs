@@ -28,6 +28,8 @@ pub fn start() {
             log::error!("missing <canvas id=\"{CANVAS_ID}\">");
             return;
         };
+        // The interface fonts, before the interface starts; the document fonts follow.
+        let document_fonts = fetch_fonts().await;
         // `?host=parent`: a same-origin page framing WordCraft opens documents in it and stores
         // what it saves (`host`). That page guards leaving it, so this one doesn't.
         let bridge = if query_param("host").as_deref() == Some("parent") { crate::host::Bridge::new() } else { None };
@@ -55,6 +57,7 @@ pub fn start() {
                     }
                     // Fonts the user added on an earlier visit (#582); the app notices them arrive.
                     font_store::load_all(cc.egui_ctx.clone());
+                    add_document_fonts(document_fonts, cc.egui_ctx.clone());
                     let inbox: Inbox = Inbox::default();
                     let pasted: Inbox = Inbox::default();
                     if let Err(e) = listen_for_pasted_pictures(pasted.clone(), cc.egui_ctx.clone()) {
@@ -123,6 +126,56 @@ pub fn start() {
             }
         }
     });
+}
+
+/// A font file on its way (`fetch_fonts`).
+type PendingFont = (&'static str, wasm_bindgen_futures::JsFuture);
+
+/// Fetch the bundled fonts the web build doesn't compile in (`wordcraft_fonts::FETCHED_FILES`)
+/// from `fonts/` beside the app (Trunk copies `assets/fonts` there; `index.html` preloads them,
+/// so they download alongside the wasm). Waits for the interface's own fonts
+/// (`wordcraft_fonts::INTERFACE_FILES`) and returns the document fonts still on their way
+/// (`add_document_fonts`). A file that doesn't arrive is drawn with the compiled-in Source Sans 3.
+async fn fetch_fonts() -> Vec<PendingFont> {
+    let Some(window) = web_sys::window() else { return Vec::new() };
+    let (interface, document): (Vec<PendingFont>, Vec<PendingFont>) = wordcraft_fonts::FETCHED_FILES
+        .iter()
+        .map(|name| (*name, wasm_bindgen_futures::JsFuture::from(window.fetch_with_str(&format!("fonts/{name}")))))
+        .partition(|(name, _)| wordcraft_fonts::INTERFACE_FILES.contains(name));
+    for (name, response) in interface {
+        add_font(name, response).await;
+    }
+    document
+}
+
+/// Add the document fonts as they arrive; the app lays out again with each.
+fn add_document_fonts(pending: Vec<PendingFont>, ctx: egui::Context) {
+    wasm_bindgen_futures::spawn_local(async move {
+        for (name, response) in pending {
+            if add_font(name, response).await {
+                ctx.request_repaint();
+            }
+        }
+    });
+}
+
+async fn add_font(name: &str, response: wasm_bindgen_futures::JsFuture) -> bool {
+    match fetch_bytes(response).await {
+        Ok(bytes) => wordcraft_fonts::FontDb::global().add_fetched(name, Box::leak(bytes.into_boxed_slice())),
+        Err(e) => {
+            log::error!("font {name} didn't load: {e}");
+            false
+        }
+    }
+}
+
+async fn fetch_bytes(response: wasm_bindgen_futures::JsFuture) -> Result<Vec<u8>, String> {
+    let response: web_sys::Response = response.await.map_err(|e| format!("{e:?}"))?.dyn_into().map_err(|_| "not a response".to_string())?;
+    if !response.ok() {
+        return Err(format!("HTTP {}", response.status()));
+    }
+    let buffer = wasm_bindgen_futures::JsFuture::from(response.array_buffer().map_err(|e| format!("{e:?}"))?).await.map_err(|e| format!("{e:?}"))?;
+    Ok(js_sys::Uint8Array::new(&buffer).to_vec())
 }
 
 fn query() -> String {

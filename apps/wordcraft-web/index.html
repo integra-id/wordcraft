@@ -8,6 +8,21 @@
   <link data-trunk rel="rust" data-bin="wordcraft-web" data-wasm-opt="z"
     data-wasm-opt-params="--enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue"
     data-weak-refs />
+  <!-- The bundled fonts, fetched at start rather than compiled into the wasm
+       (wordcraft_fonts::FETCHED_FILES); preloaded so they download alongside it. -->
+  <link data-trunk rel="copy-dir" href="../../assets/fonts" />
+  <link rel="preload" href="fonts/SourceSans3-Semibold.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="fonts/SourceSans3-Bold.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="fonts/SourceSans3-It.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="fonts/SourceSerif4-Regular.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="fonts/SourceSerif4-It.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="fonts/SourceSerif4-Semibold.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="fonts/SourceSerif4-Bold.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="fonts/SourceSerif4-BoldIt.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="fonts/Inter-Regular.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="fonts/Inter-Medium.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="fonts/Inter-SemiBold.ttf" as="fetch" crossorigin>
+  <link rel="preload" href="fonts/JetBrainsMono-Regular.ttf" as="fetch" crossorigin>
   <style>
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #e6e6e6; }
     #wordcraft_canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }

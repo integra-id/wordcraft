@@ -408,3 +408,48 @@ fn named_instances_and_collection_members_are_capped() {
     // (under 0.1 s on a loaded machine) only backs up "read once", with room for a busy CI.
     assert!(started.elapsed() < std::time::Duration::from_secs(10), "{:?}", started.elapsed());
 }
+
+/// `FETCHED_FILES` names the compiled-in files in `bundled()` order (the web viewer fetches them
+/// by these names), and the interface fonts are those files.
+#[test]
+#[cfg(not(feature = "fetched-fonts"))]
+fn fetched_files_name_the_bundled_files_in_order() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts");
+    assert_eq!(BUNDLED.len(), super::FETCHED_FILES.len() + 1);
+    assert_eq!(BUNDLED[0], super::SOURCE_SANS_REGULAR);
+    for (name, bytes) in super::FETCHED_FILES.iter().zip(&BUNDLED[1..]) {
+        assert_eq!(std::fs::read(dir.join(name)).unwrap(), *bytes, "{name}");
+    }
+    assert_eq!(std::fs::read(dir.join("Inter-Regular.ttf")).unwrap(), super::inter_regular());
+    assert_eq!(std::fs::read(dir.join("Inter-Medium.ttf")).unwrap(), super::inter_medium());
+    assert_eq!(std::fs::read(dir.join("Inter-SemiBold.ttf")).unwrap(), super::inter_semibold());
+    assert_eq!(std::fs::read(dir.join("JetBrainsMono-Regular.ttf")).unwrap(), super::jetbrains_mono_regular());
+    assert!(std::ptr::eq(super::inter_regular(), BUNDLED[9]), "one copy of each file");
+}
+
+/// The web viewer's fetched fonts (`fetched-fonts`) join the bundled faces in the compiled-in
+/// order whatever order they arrive in, and each file is added once.
+/// `cargo test -p wordcraft-fonts --features fetched-fonts fetched_fonts`
+#[cfg(feature = "fetched-fonts")]
+#[test]
+fn fetched_fonts_join_in_bundled_order() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts");
+    let db = FontDb::with_font_dirs(Vec::new());
+    let before = db.read_faces().len();
+    assert!(!db.add_fetched("Nope.ttf", super::SOURCE_SANS_REGULAR));
+    let g = db.generation();
+    for name in super::FETCHED_FILES.iter().rev() {
+        let bytes: &'static [u8] = Box::leak(std::fs::read(dir.join(name)).unwrap().into_boxed_slice());
+        assert!(db.add_fetched(name, bytes), "{name}");
+        assert!(!db.add_fetched(name, bytes), "{name} twice");
+    }
+    assert!(db.generation() > g);
+    let order: Vec<String> = db.read_faces().iter().map(|f| format!("{} {}", f.family, f.style)).collect();
+    assert!(order.len() > before);
+    let first = |family: &str| order.iter().position(|f| f.starts_with(family)).unwrap();
+    assert!(first("Source Sans 3") < first("Source Serif 4"));
+    assert!(first("Source Serif 4") < first("Inter"));
+    assert!(first("Inter") < first("JetBrains Mono"));
+    assert_eq!(order[0], "Source Sans 3 Regular");
+    assert_eq!(super::inter_regular(), std::fs::read(dir.join("Inter-Regular.ttf")).unwrap());
+}
