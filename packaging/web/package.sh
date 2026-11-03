@@ -37,7 +37,7 @@ for f in "$WORK/$NAME"/fonts/*.ttf; do
 done
 # Precompressed copies for servers that send them as they are (nginx gzip_static/brotli_static,
 # Caddy precompressed); the others ignore them. The originals stay for clients without either.
-for f in "$WORK/$NAME"/*.wasm "$WORK/$NAME"/*.js "$WORK/$NAME"/index.html "$WORK/$NAME"/fonts/*.ttf; do
+for f in "$WORK/$NAME"/*.wasm "$WORK/$NAME"/*.js "$WORK/$NAME"/index.html "$WORK/$NAME"/fonts/*.ttf "$WORK/$NAME"/egui-fonts/*.ttf; do
   gzip -k9n "$f"
   if command -v brotli >/dev/null; then brotli -kq 11 "$f"; fi
 done

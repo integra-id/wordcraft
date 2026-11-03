@@ -421,7 +421,7 @@ fn fetched_files_name_bundled_files_in_order() {
     };
     let order: Vec<usize> = super::FETCHED_FILES.iter().map(|n| at(n)).collect();
     assert!(order.windows(2).all(|w| w[0] < w[1]), "{order:?}");
-    assert_eq!(BUNDLED.len(), super::FETCHED_FILES.len() + 5);
+    assert_eq!(BUNDLED.len(), super::FETCHED_FILES.len() + 2);
     assert_eq!(BUNDLED[0], super::SOURCE_SANS_REGULAR);
     for (name, bytes) in [
         ("Inter-Regular.ttf", super::INTER_REGULAR),

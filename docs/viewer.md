@@ -83,10 +83,12 @@ history and dirty flag are unchanged.
   viewer's ([`viewer::VIEWER_COMMANDS`], checked against the registry by `tests::viewer`) keep
   their handlers. The others run `viewer::refused`, chosen at compile time by the `spec!` macro,
   so the editing handlers aren't linked.
-- Web fonts (`wordcraft-fonts` feature `fetched-fonts`, on for the wasm build): the interface
-  fonts and Source Sans 3 Regular are compiled in; the other eight bundled document faces
-  (`wordcraft_fonts::FETCHED_FILES`) are fetched from `fonts/` without holding up start-up and
+- Web fonts (`wordcraft-fonts` feature `fetched-fonts`, on for the wasm build): only Inter
+  Regular and Source Sans 3 Regular are compiled in; Inter Medium/SemiBold, JetBrains Mono and the
+  other eight bundled document faces (`wordcraft_fonts::FETCHED_FILES`) are fetched from `fonts/` without holding up start-up and
   join the font database in bundled order (`FontDb::add_fetched`), which relays documents out.
+  Until they arrive, medium/semibold interface text uses Inter Regular and monospace text the
+  fallback faces (`theme::late_faces_generation` reinstalls the interface fonts).
 - WebAssembly SIMD (`.cargo/config.toml`, `+simd128` for wasm32): fearless_simd compiles its
   simd128 level instead of the scalar fallback, so the viewer needs Chrome/Edge 91+, Firefox 89+
   or Safari 16.4+.

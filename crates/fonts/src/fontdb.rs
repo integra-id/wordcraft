@@ -26,9 +26,11 @@ mod names;
 use face::BUNDLED;
 use face::FontBytes;
 pub use face::{
-    FALLBACK_FAMILY, FETCHED_FILES, FaceRef, FontFace, INTER_MEDIUM, INTER_REGULAR, INTER_SEMIBOLD, JETBRAINS_MONO_REGULAR, SOURCE_SANS_REGULAR,
-    bundled,
+    FALLBACK_FAMILY, FETCHED_FILES, FaceRef, FontFace, INTER_REGULAR, SOURCE_SANS_REGULAR, bundled, inter_medium, inter_semibold,
+    jetbrains_mono_regular,
 };
+#[cfg(not(feature = "fetched-fonts"))]
+pub use face::{INTER_MEDIUM, INTER_SEMIBOLD, JETBRAINS_MONO_REGULAR};
 #[cfg(not(target_arch = "wasm32"))]
 use fallback_data::{CoverageIndex, SysFallback};
 use fallback_data::{FallbackCache, RunFallbackCache};

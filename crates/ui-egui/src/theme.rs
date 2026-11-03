@@ -551,7 +551,7 @@ static LATE_FACES_GENERATION: std::sync::atomic::AtomicU32 = std::sync::atomic::
 
 /// Add one of egui's default faces ([`EGUI_DEFAULT_FACES`], by name) to a build that doesn't
 /// compile them in. The interface fonts are installed again at the next frame
-/// ([`egui_default_faces_generation`]). An unknown name is ignored.
+/// ([`late_faces_generation`]). An unknown name is ignored.
 pub fn add_egui_default_face(name: &str, bytes: &'static [u8]) {
     let Some(&(name, _)) = EGUI_DEFAULT_FACES.iter().find(|(n, _)| *n == name) else { return };
     let mut late = LATE_FACES.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -561,9 +561,12 @@ pub fn add_egui_default_face(name: &str, bytes: &'static [u8]) {
     }
 }
 
-/// Changes whenever [`add_egui_default_face`] adds a face.
-pub fn egui_default_faces_generation() -> u32 {
-    LATE_FACES_GENERATION.load(std::sync::atomic::Ordering::Relaxed)
+/// Changes whenever an interface face arrives in a build that fetches some: one of egui's
+/// ([`add_egui_default_face`]) or of the interface fonts the font database fetches
+/// ([`wordcraft_fonts::inter_medium`] …). Only grows.
+pub fn late_faces_generation() -> u32 {
+    let fetched = [wordcraft_fonts::inter_medium(), wordcraft_fonts::inter_semibold(), wordcraft_fonts::jetbrains_mono_regular()];
+    LATE_FACES_GENERATION.load(std::sync::atomic::Ordering::Relaxed) + fetched.iter().filter(|f| f.is_some()).count() as u32
 }
 
 /// Start from egui's default fonts: the compiled-in ones, or else the faces added so far, in
@@ -599,19 +602,22 @@ pub fn font_definitions_language(prefer_hans: bool, prefer_korean: bool, prefer_
         fonts.font_data.insert(name.into(), Arc::new(FontData::from_static(bytes)));
     };
     add(&mut fonts, "Inter", wordcraft_fonts::INTER_REGULAR);
-    add(&mut fonts, "InterMedium", wordcraft_fonts::INTER_MEDIUM);
-    add(&mut fonts, "InterSemiBold", wordcraft_fonts::INTER_SEMIBOLD);
+    // The web viewer fetches these: until they arrive, Inter Regular stands in.
+    let medium = wordcraft_fonts::inter_medium().map(|b| add(&mut fonts, "InterMedium", b)).is_some();
+    let semibold = wordcraft_fonts::inter_semibold().map(|b| add(&mut fonts, "InterSemiBold", b)).is_some();
     add(&mut fonts, "SourceSans", wordcraft_fonts::SOURCE_SANS_REGULAR);
-    add(&mut fonts, "Mono", wordcraft_fonts::JETBRAINS_MONO_REGULAR);
+    let mono = wordcraft_fonts::jetbrains_mono_regular().map(|b| add(&mut fonts, "Mono", b)).is_some();
     if let Some(prop) = fonts.families.get_mut(&FontFamily::Proportional) {
         prop.insert(0, "Inter".into());
         prop.push("SourceSans".into());
     }
-    if let Some(m) = fonts.families.get_mut(&FontFamily::Monospace) {
+    if mono && let Some(m) = fonts.families.get_mut(&FontFamily::Monospace) {
         m.insert(0, "Mono".into());
     }
-    fonts.families.insert(FontFamily::Name("medium".into()), vec!["InterMedium".into(), "Inter".into(), "SourceSans".into()]);
-    fonts.families.insert(FontFamily::Name("semibold".into()), vec!["InterSemiBold".into(), "Inter".into(), "SourceSans".into()]);
+    let weight =
+        |name: &str, have: bool| have.then(|| name.to_string()).into_iter().chain(["Inter".into(), "SourceSans".into()]).collect::<Vec<String>>();
+    fonts.families.insert(FontFamily::Name("medium".into()), weight("InterMedium", medium));
+    fonts.families.insert(FontFamily::Name("semibold".into()), weight("InterSemiBold", semibold));
     let add_cjk = |fonts: &mut FontDefinitions, name: String, data: FontData| {
         fonts.font_data.insert(name.clone(), Arc::new(data));
         for fam in [FontFamily::Proportional, FontFamily::Name("medium".into()), FontFamily::Name("semibold".into())] {

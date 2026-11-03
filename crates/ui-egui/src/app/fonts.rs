@@ -155,7 +155,7 @@ impl WordApp {
     /// egui's late default faces have changed since the last install.
     pub(super) fn install_ui_fonts(&mut self, ctx: &egui::Context, lang: i18n::Lang) {
         let system_cjk = self.fonts_system_cjk || self.want_system_cjk || lang.uses_cjk();
-        let egui_generation = theme::egui_default_faces_generation();
+        let egui_generation = theme::late_faces_generation();
         if !self.styled
             || egui_generation != self.fonts_egui_generation
             || lang.prefers_hans() != self.fonts_hans

@@ -10,8 +10,8 @@ pub const FALLBACK_FAMILY: &str = "Source Sans 3";
 /// The bundled fonts (OFL), as font file bytes. Japanese fonts are not bundled: they come from
 /// the optional craft-fonts build input ([`crate::japanese_document_fonts`]).
 ///
-/// With the `fetched-fonts` feature (the web viewer) only Source Sans 3 Regular and the interface
-/// fonts are compiled in; the app fetches the document fonts ([`FETCHED_FILES`]) and adds them with
+/// With the `fetched-fonts` feature (the web viewer) only Source Sans 3 Regular and Inter Regular
+/// are compiled in; the app fetches the document fonts ([`FETCHED_FILES`]) and adds them with
 /// [`crate::FontDb::add_fetched`].
 pub fn bundled() -> &'static [&'static [u8]] {
     BUNDLED
@@ -35,10 +35,11 @@ const BUNDLED_FILES: [&str; 13] = [
     "JetBrainsMono-Regular.ttf",
 ];
 
-/// The bundled document fonts the web viewer fetches instead of compiling in
+/// The bundled fonts the web viewer fetches instead of compiling in
 /// ([`crate::FontDb::add_fetched`]), in [`bundled`] order. Every build compiles in the rest:
-/// Source Sans 3 Regular (the last-resort face) and the interface fonts, which the window needs
-/// before its first frame.
+/// Source Sans 3 Regular (the last-resort face) and Inter Regular, which the window needs before
+/// its first frame. The other interface faces ([`inter_medium`], [`inter_semibold`],
+/// [`jetbrains_mono_regular`]) take over from Inter Regular when they arrive.
 pub const FETCHED_FILES: &[&str] = &[
     "SourceSans3-Semibold.ttf",
     "SourceSans3-Bold.ttf",
@@ -48,6 +49,9 @@ pub const FETCHED_FILES: &[&str] = &[
     "SourceSerif4-Semibold.ttf",
     "SourceSerif4-Bold.ttf",
     "SourceSerif4-BoldIt.ttf",
+    "Inter-Medium.ttf",
+    "Inter-SemiBold.ttf",
+    "JetBrainsMono-Regular.ttf",
 ];
 
 #[cfg(not(feature = "fetched-fonts"))]
@@ -69,7 +73,7 @@ pub(super) static BUNDLED: &[&[u8]] = &[
 
 /// The compiled-in files of a `fetched-fonts` build, in [`bundled`] order.
 #[cfg(feature = "fetched-fonts")]
-pub(super) static BUNDLED: &[&[u8]] = &[SOURCE_SANS_REGULAR, INTER_REGULAR, INTER_MEDIUM, INTER_SEMIBOLD, JETBRAINS_MONO_REGULAR];
+pub(super) static BUNDLED: &[&[u8]] = &[SOURCE_SANS_REGULAR, INTER_REGULAR];
 
 /// Source Sans 3 Regular: the UI sans and the last-resort face.
 pub static SOURCE_SANS_REGULAR: &[u8] = include_bytes!("../../../../assets/fonts/SourceSans3-Regular.ttf");
@@ -77,12 +81,47 @@ pub static SOURCE_SANS_REGULAR: &[u8] = include_bytes!("../../../../assets/fonts
 /// statics instead of their own `include_bytes!`, so the binary (and the web download) holds
 /// one copy of each file.
 pub static INTER_REGULAR: &[u8] = include_bytes!("../../../../assets/fonts/Inter-Regular.ttf");
-/// Inter Medium; see [`INTER_REGULAR`].
+/// Inter Medium; see [`INTER_REGULAR`]. A `fetched-fonts` build fetches it ([`inter_medium`]).
+#[cfg(not(feature = "fetched-fonts"))]
 pub static INTER_MEDIUM: &[u8] = include_bytes!("../../../../assets/fonts/Inter-Medium.ttf");
-/// Inter SemiBold; see [`INTER_REGULAR`].
+/// Inter SemiBold; see [`INTER_MEDIUM`].
+#[cfg(not(feature = "fetched-fonts"))]
 pub static INTER_SEMIBOLD: &[u8] = include_bytes!("../../../../assets/fonts/Inter-SemiBold.ttf");
-/// JetBrains Mono Regular; see [`INTER_REGULAR`].
+/// JetBrains Mono Regular; see [`INTER_MEDIUM`].
+#[cfg(not(feature = "fetched-fonts"))]
 pub static JETBRAINS_MONO_REGULAR: &[u8] = include_bytes!("../../../../assets/fonts/JetBrainsMono-Regular.ttf");
+
+/// Inter Medium for the interface: [`INTER_MEDIUM`], or in a `fetched-fonts` build the fetched
+/// file once it has arrived.
+pub fn inter_medium() -> Option<&'static [u8]> {
+    #[cfg(not(feature = "fetched-fonts"))]
+    return Some(INTER_MEDIUM);
+    #[cfg(feature = "fetched-fonts")]
+    fetched("Inter-Medium.ttf")
+}
+
+/// Inter SemiBold for the interface; see [`inter_medium`].
+pub fn inter_semibold() -> Option<&'static [u8]> {
+    #[cfg(not(feature = "fetched-fonts"))]
+    return Some(INTER_SEMIBOLD);
+    #[cfg(feature = "fetched-fonts")]
+    fetched("Inter-SemiBold.ttf")
+}
+
+/// JetBrains Mono Regular for the interface; see [`inter_medium`].
+pub fn jetbrains_mono_regular() -> Option<&'static [u8]> {
+    #[cfg(not(feature = "fetched-fonts"))]
+    return Some(JETBRAINS_MONO_REGULAR);
+    #[cfg(feature = "fetched-fonts")]
+    fetched("JetBrainsMono-Regular.ttf")
+}
+
+/// The bytes of fetched file `name` (one of [`FETCHED_FILES`]), once it has arrived.
+#[cfg(feature = "fetched-fonts")]
+fn fetched(name: &str) -> Option<&'static [u8]> {
+    let i = FETCHED_FILES.iter().position(|f| *f == name)?;
+    FETCHED.get(i)?.get().copied()
+}
 
 /// The [`FETCHED_FILES`] that have arrived ([`crate::FontDb::add_fetched`]).
 #[cfg(feature = "fetched-fonts")]
@@ -98,13 +137,7 @@ pub(super) fn file_rank(name: &str) -> Option<usize> {
 /// for any other font.
 #[cfg(feature = "fetched-fonts")]
 pub(super) fn bundled_rank(data: &[u8]) -> Option<usize> {
-    let compiled = [
-        (SOURCE_SANS_REGULAR, "SourceSans3-Regular.ttf"),
-        (INTER_REGULAR, "Inter-Regular.ttf"),
-        (INTER_MEDIUM, "Inter-Medium.ttf"),
-        (INTER_SEMIBOLD, "Inter-SemiBold.ttf"),
-        (JETBRAINS_MONO_REGULAR, "JetBrainsMono-Regular.ttf"),
-    ];
+    let compiled = [(SOURCE_SANS_REGULAR, "SourceSans3-Regular.ttf"), (INTER_REGULAR, "Inter-Regular.ttf")];
     let name = compiled.iter().find(|(d, _)| std::ptr::eq(*d, data)).map(|(_, n)| *n).or_else(|| {
         let i = FETCHED.iter().position(|f| f.get().is_some_and(|d| std::ptr::eq(*d, data)))?;
         FETCHED_FILES.get(i).copied()
