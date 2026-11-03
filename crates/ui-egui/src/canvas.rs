@@ -1194,6 +1194,10 @@ fn finish_canvas_frame(finish: CanvasFinish<'_>, out: egui::scroll_area::ScrollA
             open = false;
         }
     }
+    // The embedder hid the menu (`crate::features`): it never opens.
+    if !app.shows(crate::features::Feature::ContextMenu) {
+        open = false;
+    }
     let child_open = egui::Popup::is_any_open(ui.ctx());
     let mut shown = open;
     if open {

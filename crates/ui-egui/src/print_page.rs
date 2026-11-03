@@ -9,6 +9,7 @@ use egui::{Rect, Sense, Stroke, TextureHandle, Ui, pos2, vec2};
 use serde_json::{Value, json};
 use wordcraft_layout::DocLayout;
 
+use crate::features::Feature;
 use crate::theme::{Tokens, medium, regular};
 use crate::{WordApp, icons};
 
@@ -169,7 +170,10 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                 // that prints now rather than one more setting in the list below.
                 if hook
                     && ui
-                        .add_enabled(!native || app.printing.ready(), crate::widgets::primary_button(ui, tl!("Print")).min_size(vec2(320.0, 34.0)))
+                        .add_enabled(
+                            (!native || app.printing.ready()) && app.allows(Feature::Print),
+                            crate::widgets::primary_button(ui, tl!("Print")).min_size(vec2(320.0, 34.0)),
+                        )
                         .clicked()
                 {
                     let params = app.ui.print.params();
@@ -188,9 +192,13 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                 } else {
                     ui.label(tl!("Save a copy in another format. Printing goes through a PDF you can print from any viewer."));
                 }
-                if ui
-                    .add(egui::Button::new(egui::RichText::new(tl!("Save these pages as PDF…")).font(medium(13.5))).min_size(vec2(320.0, 34.0)))
-                    .clicked()
+                if app.shows(Feature::Pdf)
+                    && ui
+                        .add_enabled(
+                            app.allows(Feature::Pdf),
+                            egui::Button::new(egui::RichText::new(tl!("Save these pages as PDF…")).font(medium(13.5))).min_size(vec2(320.0, 34.0)),
+                        )
+                        .clicked()
                 {
                     app.print_pdf_dialog();
                 }
@@ -247,13 +255,15 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                         ui.label(egui::RichText::new(e.to_string()).color(t.red));
                     }
                 }
-                ui.add_space(8.0);
-                ui.separator();
-                ui.add_space(4.0);
-                if hook {
-                    ui.label(tl!("Or save a copy in another format:"));
+                if app.shows(Feature::Export) {
+                    ui.add_space(8.0);
+                    ui.separator();
+                    ui.add_space(4.0);
+                    if hook {
+                        ui.label(tl!("Or save a copy in another format:"));
+                    }
+                    export_formats(app, ui);
                 }
-                export_formats(app, ui);
             });
         });
         ui.add_space(24.0);
@@ -365,7 +375,13 @@ pub fn export_formats(app: &mut WordApp, ui: &mut Ui) {
         ("Plain text (*.txt)", "txt"),
         ("Page image (*.png)", "png"),
     ] {
-        if ui.add(egui::Button::new(egui::RichText::new(tl!(label)).font(medium(13.5))).min_size(vec2(320.0, 34.0))).clicked() {
+        // PDF is its own feature; the rest are Export (`crate::features`).
+        let f = if ext == "pdf" { Feature::Pdf } else { Feature::Export };
+        if !app.shows(f) {
+            continue;
+        }
+        let button = egui::Button::new(egui::RichText::new(tl!(label)).font(medium(13.5))).min_size(vec2(320.0, 34.0));
+        if ui.add_enabled(app.allows(f), button).clicked() {
             app.export_dialog(ext);
         }
         ui.add_space(4.0);

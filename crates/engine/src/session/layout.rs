@@ -30,7 +30,10 @@ impl Session {
         // A dictionary or Language pack installed, removed or edited (in this document's window or
         // any other) proofs it again, open or parked.
         let rev = (self.rev, wordcraft_proof::dictionary_generation());
-        let (proofing, numeral) = (self.view.proofing, self.view.numeral);
+        let numeral = self.view.numeral;
+        // The host's `spelling`/`grammar` features (`proofing_off`) win over the view and options.
+        let off = self.proofing_off;
+        let proofing = (self.view.proofing && !(off.spelling && off.grammar), self.proof_options());
         let fits = |e: &Option<LayoutEntry>| {
             e.as_ref().is_some_and(|(r, w, h, m, sp, _, pf, o, hd, n, t, sh)| {
                 *r == rev
@@ -65,20 +68,19 @@ impl Session {
             hide_deleted,
             hide_marked: deleted.1,
             deletions_in_balloons: deleted.2,
-            proofing: self.view.proofing,
+            proofing: proofing.0,
             numeral: self.view.numeral.resolve(SYSTEM_LOCALE.get().map(String::as_str)),
             comment_balloons: false,
             field_codes: shown.1,
             outline: outline.clone(),
-            proof: wordcraft_layout::ProofOptions { grammar: self.prefs.mark_grammar, spelling: self.prefs.spelling() },
+            proof: proofing.1,
             typing_word: typing,
             filename: filename.clone(),
             filepath: filepath.clone(),
         };
         let l = Arc::new(wordcraft_layout::layout(&self.doc, &mut self.cache, &opts));
         let [newest, _] = std::mem::take(&mut self.layout);
-        self.layout =
-            [Some((rev, width, height, mode, spacing, l.clone(), self.view.proofing, outline, deleted, self.view.numeral, typing, shown)), newest];
+        self.layout = [Some((rev, width, height, mode, spacing, l.clone(), proofing, outline, deleted, self.view.numeral, typing, shown)), newest];
         l
     }
 
@@ -173,6 +175,24 @@ impl Session {
             ..Default::default()
         };
         Arc::new(wordcraft_layout::layout(&self.doc, &mut LayoutCache::new(), &opts))
+    }
+
+    /// What the squiggles mark: File › Options › Proofing, less what the host turned off.
+    fn proof_options(&self) -> wordcraft_layout::ProofOptions {
+        wordcraft_layout::ProofOptions {
+            grammar: self.prefs.mark_grammar && !self.proofing_off.grammar,
+            mark_spelling: !self.proofing_off.spelling,
+            spelling: self.prefs.spelling(),
+        }
+    }
+
+    /// Turn spelling or grammar squiggles off (or back on) for every document, whatever the view
+    /// and File › Options say: the viewer's `spelling` and `grammar` features. Lays out again.
+    pub fn set_proofing_off(&mut self, off: crate::viewer::ProofingOff) {
+        if self.proofing_off != off {
+            self.proofing_off = off;
+            self.relayout();
+        }
     }
 
     /// Invalidate the cached layout (fonts changed etc.).

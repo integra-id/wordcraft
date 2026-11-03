@@ -92,6 +92,14 @@ pub fn refuses(id: &str, mutates: bool) -> Option<&'static str> {
     (mutates || EDITING.contains(&id) || EDITING_NAMESPACES.iter().any(|ns| id.starts_with(ns))).then_some(REASON)
 }
 
+/// Spelling or grammar squiggles a host turned off ([`crate::Session::proofing_off`]): the
+/// viewer's `spelling` and `grammar` features. With both off nothing is checked at all.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct ProofingOff {
+    pub spelling: bool,
+    pub grammar: bool,
+}
+
 /// Whether this build registers the editing commands' handlers (the `editor` feature, on by
 /// default). Without it every command outside [`VIEWER_COMMANDS`] is still registered, so menus,
 /// shortcuts and [`refuses`] see it, but runs [`refused`]: the linker then leaves the editing

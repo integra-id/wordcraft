@@ -241,6 +241,7 @@ impl Session {
             go_back_step: _,
             // Shared by every open document.
             viewer: _,
+            proofing_off: _,
             user_dict_path: _,
             clipboard: _,
             clipboard_text: _,

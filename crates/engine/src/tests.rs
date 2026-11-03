@@ -11982,3 +11982,30 @@ fn page_down_extends_a_selection_that_ends_in_collapsed_outline_text() {
     assert!(s.sel.focus.path.0[0] > 6, "Page Down extends the selection a page on: {:?}", s.sel.focus);
     assert!(s.layout().caret(&s.sel.focus).is_some(), "to a place the outline shows");
 }
+
+/// The viewer's `spelling` and `grammar` features (`Session::set_proofing_off`): the host turns
+/// either kind of squiggle off, whatever the view and File › Options say, and back on.
+#[test]
+fn proofing_off_drops_spelling_or_grammar_squiggles() {
+    use crate::viewer::ProofingOff;
+    let mut s = Session::new(wordcraft_doc::Document::from_text("item helo"));
+    s.view.proofing = true;
+    let marks = |s: &mut Session| -> (usize, usize) {
+        let l = s.layout();
+        let issues = l.pages[0].items.iter().filter_map(|i| match i {
+            wordcraft_layout::Placed::Lines { para, .. } => Some(para.issues.clone()),
+            _ => None,
+        });
+        issues.flatten().fold((0, 0), |(sp, gr), i| if i.2 { (sp, gr + 1) } else { (sp + 1, gr) })
+    };
+    let (sp, gr) = marks(&mut s);
+    assert!(sp > 0 && gr > 0, "both kinds marked: {sp} {gr}");
+    s.set_proofing_off(ProofingOff { spelling: true, grammar: false });
+    assert_eq!(marks(&mut s), (0, gr), "no spelling");
+    s.set_proofing_off(ProofingOff { spelling: false, grammar: true });
+    assert_eq!(marks(&mut s), (sp, 0), "no grammar");
+    s.set_proofing_off(ProofingOff { spelling: true, grammar: true });
+    assert_eq!(marks(&mut s), (0, 0), "nothing");
+    s.set_proofing_off(ProofingOff::default());
+    assert_eq!(marks(&mut s), (sp, gr), "back on");
+}

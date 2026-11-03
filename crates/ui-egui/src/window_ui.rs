@@ -157,6 +157,7 @@ impl WordApp {
         let WordApp {
             // App-wide.
             session: _,
+            features: _,
             services: _,
             printing: _,
             print_feedback_seen: _,

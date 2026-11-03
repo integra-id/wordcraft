@@ -39,6 +39,7 @@ pub mod desktop_theme;
 pub mod dialogs;
 pub mod documents;
 pub mod equation_tab;
+pub mod features;
 /// The built-in file browser, for desktops without a system file dialog (#576).
 #[cfg(not(target_arch = "wasm32"))]
 pub mod file_browser;
@@ -467,6 +468,9 @@ fn migrate_units(v: &mut Value) {
 /// The application.
 pub struct WordApp {
     pub session: Session,
+    /// Viewer features the embedder hid or turned off ([`features`]); set with
+    /// [`WordApp::set_features`].
+    pub features: features::ViewerFeatures,
     pub ui: UiState,
     pub services: Services,
     pub printing: printing::State,

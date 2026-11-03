@@ -75,6 +75,7 @@ impl Session {
             user_dict_path: _,
             // App-wide policy, not an edit.
             viewer: _,
+            proofing_off: _,
             dirty,
             clipboard: _,
             // Like the clipboard: what the next paste can make a move of.

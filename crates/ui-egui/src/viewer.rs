@@ -10,6 +10,7 @@
 use egui::{Align2, Rect, Sense, Ui, pos2, vec2};
 use serde_json::json;
 
+use crate::features::Feature;
 use crate::theme::{Tokens, TypeRung, medium, paint_text, text_width};
 use crate::{WordApp, icons};
 
@@ -54,9 +55,15 @@ pub const BACKSTAGE_PAGES: &[&str] = &["open", "print", "export", "close", "opti
 /// The File page the viewer shows in place of one it doesn't have.
 pub const BACKSTAGE_START: &str = "open";
 
-/// Why the viewer refuses command `id` (engine, interface or Zotero), or `None` when it runs it
-/// or the app isn't the viewer.
+/// Why the viewer refuses command `id` (engine, interface or Zotero, or a feature the embedder
+/// turned off, [`crate::features`]), or `None` when it runs it.
 pub fn refuses(app: &WordApp, id: &str) -> Option<&'static str> {
+    crate::features::refuses(app, id, None).or_else(|| refuses_editing(app, id))
+}
+
+/// Why the viewer refuses command `id` for editing, or `None` when it runs it or the app isn't
+/// the viewer.
+pub fn refuses_editing(app: &WordApp, id: &str) -> Option<&'static str> {
     if !app.is_viewer() {
         return None;
     }
@@ -69,7 +76,18 @@ pub fn refuses(app: &WordApp, id: &str) -> Option<&'static str> {
 
 /// Whether the File page shows page `id` in this app.
 pub fn shows_backstage_page(app: &WordApp, id: &str) -> bool {
-    !app.is_viewer() || BACKSTAGE_PAGES.contains(&id)
+    (!app.is_viewer() || BACKSTAGE_PAGES.contains(&id)) && app.features.page(id).0
+}
+
+/// Whether the File page shows page `id` and it works (not greyed out, [`crate::features`]).
+pub fn backstage_page_works(app: &WordApp, id: &str) -> bool {
+    shows_backstage_page(app, id) && app.features.page(id).1
+}
+
+/// The File page to start on: [`BACKSTAGE_START`], or the first one that works when the embedder
+/// turned that off. `None` when none works.
+pub fn backstage_start(app: &WordApp) -> Option<&'static str> {
+    std::iter::once(BACKSTAGE_START).chain(BACKSTAGE_PAGES.iter().copied()).find(|p| backstage_page_works(app, p))
 }
 
 /// A toolbar button: an icon, with the label beside it when `label` is set. Returns whether it
@@ -119,6 +137,9 @@ fn tip(app: &WordApp, label: &str, id: &str) -> String {
 /// The viewer's toolbar across the top of the window: File, Open, Export, Print on the left;
 /// Find, page and zoom controls and the views on the right; the document's name between.
 pub fn bar(app: &mut WordApp, ui: &mut Ui) {
+    if !app.shows(Feature::Toolbar) {
+        return;
+    }
     let t = Tokens::get(ui.ctx());
     let mac = app.integrated_titlebar;
     let left = if mac { app.mac_titlebar.content_left as i8 } else { 8 };
@@ -144,29 +165,49 @@ pub fn bar(app: &mut WordApp, ui: &mut Ui) {
             let has = app.has_document();
             let mut left_end = full.min.x;
             let mut right_start = full.max.x;
+            // Features the embedder hid are left out; those it turned off are greyed out, as is
+            // the whole bar when `toolbar` is turned off (`crate::features`).
+            let fx = app.features;
+            let bar_on = fx.enabled(Feature::Toolbar);
+            let on = |f: Feature| bar_on && fx.enabled(f);
             ui.horizontal_centered(|ui| {
                 ui.spacing_mut().item_spacing = vec2(2.0, 0.0);
-                if button(ui, "file", tl!("File: open, print and export"), Some(tl!("File")), true, app.ui.backstage) {
-                    let _ = app.run("ui.backstage", json!({"value": true, "page": BACKSTAGE_START}));
+                if fx.visible(Feature::File) {
+                    let start = backstage_start(app);
+                    if button(
+                        ui,
+                        "file",
+                        tl!("File: open, print and export"),
+                        Some(tl!("File")),
+                        on(Feature::File) && start.is_some(),
+                        app.ui.backstage,
+                    ) && let Some(page) = start
+                    {
+                        let _ = app.run("ui.backstage", json!({"value": true, "page": page}));
+                    }
+                    if [Feature::Open, Feature::Pdf, Feature::Export, Feature::Print].iter().any(|&f| fx.visible(f)) {
+                        separator(ui);
+                    }
                 }
-                separator(ui);
-                if button(ui, "open", &tip(app, "Open", "file.open"), Some(tl!("Open")), true, false) {
+                if fx.visible(Feature::Open) && button(ui, "open", &tip(app, "Open", "file.open"), Some(tl!("Open")), on(Feature::Open), false) {
                     let _ = app.run("file.open", json!({}));
                 }
-                if button(ui, "export", tl!("Export a copy as PDF"), Some(tl!("PDF")), has, false) {
+                if fx.visible(Feature::Pdf) && button(ui, "export", tl!("Export a copy as PDF"), Some(tl!("PDF")), has && on(Feature::Pdf), false) {
                     app.export_dialog("pdf");
                 }
-                if button(
-                    ui,
-                    "saveAs",
-                    tl!("Export a copy in another format (DOCX, ODT, RTF, HTML, Markdown, LaTeX, text, PNG)"),
-                    Some(tl!("Export")),
-                    has,
-                    false,
-                ) {
+                if fx.visible(Feature::Export)
+                    && button(
+                        ui,
+                        "saveAs",
+                        tl!("Export a copy in another format (DOCX, ODT, RTF, HTML, Markdown, LaTeX, text, PNG)"),
+                        Some(tl!("Export")),
+                        has && on(Feature::Export),
+                        false,
+                    )
+                {
                     let _ = app.run("ui.backstage", json!({"value": true, "page": "export"}));
                 }
-                if button(ui, "print", &tip(app, "Print", "file.print"), None, has, false) {
+                if fx.visible(Feature::Print) && button(ui, "print", &tip(app, "Print", "file.print"), None, has && on(Feature::Print), false) {
                     let _ = app.run("file.print", json!({}));
                 }
                 left_end = ui.min_rect().max.x;
@@ -177,31 +218,45 @@ pub fn bar(app: &mut WordApp, ui: &mut Ui) {
                     }
                     let view = &app.session.view;
                     let (read, nav) = (view.read_mode, view.nav_pane);
-                    if button(ui, "readMode", tl!("Read Mode"), None, true, read) {
+                    // A separator goes between two groups that are both drawn.
+                    let mut drawn = false;
+                    let mut group = |ui: &mut Ui, f: Feature| {
+                        let show = fx.visible(f);
+                        if show && std::mem::replace(&mut drawn, true) {
+                            separator(ui);
+                        }
+                        show
+                    };
+                    if group(ui, Feature::Views) && button(ui, "readMode", tl!("Read Mode"), None, on(Feature::Views), read) {
                         let _ = app.run(if read { "view.printLayout" } else { "view.readMode" }, json!({}));
                     }
-                    separator(ui);
-                    if button(ui, "onePage", tl!("One Page"), None, !read, false) {
-                        let _ = app.run("view.onePage", json!({}));
+                    if group(ui, Feature::Zoom) {
+                        let z = on(Feature::Zoom);
+                        if button(ui, "onePage", tl!("One Page"), None, z && !read, false) {
+                            let _ = app.run("view.onePage", json!({}));
+                        }
+                        if button(ui, "pageWidth", tl!("Page Width"), None, z && !read, false) {
+                            let _ = app.run("view.pageWidth", json!({}));
+                        }
+                        if button(ui, "zoomIn", &tip(app, "Zoom In", "view.zoomIn"), None, z, false) {
+                            let _ = app.run("view.zoomIn", json!({}));
+                        }
+                        if button(ui, "zoomOut", &tip(app, "Zoom Out", "view.zoomOut"), None, z, false) {
+                            let _ = app.run("view.zoomOut", json!({}));
+                        }
                     }
-                    if button(ui, "pageWidth", tl!("Page Width"), None, !read, false) {
-                        let _ = app.run("view.pageWidth", json!({}));
+                    if group(ui, Feature::PageNav) {
+                        let p = on(Feature::PageNav);
+                        if button(ui, "chevronRight", tl!("Next Page"), None, p, false) {
+                            page_step(app, 1);
+                        }
+                        if button(ui, "chevronLeft", tl!("Previous Page"), None, p, false) {
+                            page_step(app, -1);
+                        }
                     }
-                    if button(ui, "zoomIn", &tip(app, "Zoom In", "view.zoomIn"), None, true, false) {
-                        let _ = app.run("view.zoomIn", json!({}));
-                    }
-                    if button(ui, "zoomOut", &tip(app, "Zoom Out", "view.zoomOut"), None, true, false) {
-                        let _ = app.run("view.zoomOut", json!({}));
-                    }
-                    separator(ui);
-                    if button(ui, "chevronRight", tl!("Next Page"), None, true, false) {
-                        page_step(app, 1);
-                    }
-                    if button(ui, "chevronLeft", tl!("Previous Page"), None, true, false) {
-                        page_step(app, -1);
-                    }
-                    separator(ui);
-                    if button(ui, "navPane", &tip(app, "Find and Navigation pane", "edit.find"), None, true, nav) {
+                    if group(ui, Feature::Find)
+                        && button(ui, "navPane", &tip(app, "Find and Navigation pane", "edit.find"), None, on(Feature::Find), nav)
+                    {
                         let _ = app.run("view.navigationPane", json!({}));
                     }
                     right_start = ui.min_rect().min.x;
@@ -256,8 +311,11 @@ pub fn empty(app: &mut WordApp, ui: &mut Ui) {
                     .color(t.text_dim),
             );
             ui.add_space(14.0);
-            if ui.add(egui::Button::new(egui::RichText::new(tl!("Open…")).font(medium(14.0))).min_size(vec2(140.0, 32.0))).clicked() {
-                let _ = app.run("file.open", json!({}));
+            if app.shows(Feature::Open) {
+                let open = egui::Button::new(egui::RichText::new(tl!("Open…")).font(medium(14.0))).min_size(vec2(140.0, 32.0));
+                if ui.add_enabled(app.allows(Feature::Open), open).clicked() {
+                    let _ = app.run("file.open", json!({}));
+                }
             }
         });
     });
@@ -265,7 +323,7 @@ pub fn empty(app: &mut WordApp, ui: &mut Ui) {
 
 #[cfg(test)]
 mod tests {
-    use egui_kittest::kittest::Queryable;
+    use egui_kittest::kittest::{NodeT, Queryable};
     use serde_json::json;
     use wordcraft_engine::Session;
 
@@ -429,5 +487,76 @@ mod tests {
         assert_eq!(app.session.doc.plain_text(wordcraft_doc::StoryRef::Body), "Dear reader");
         assert!(!app.session.dirty && !app.session.can_undo());
         std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// `?hide=open,export,print&disable=pdf` (`crate::features`): hidden buttons are gone, turned
+    /// off ones greyed out, and neither runs, whatever asks; a document handed over still opens.
+    #[test]
+    fn hidden_and_disabled_features_are_left_out_greyed_and_refused() {
+        let dir = std::env::temp_dir().join(format!("wordcraft-viewer-features-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let src = dir.join("a.txt");
+        std::fs::write(&src, "Opened").unwrap();
+        let mut a = viewer("Hello world");
+        let (f, unknown) = crate::features::ViewerFeatures::parse("open,export,print", "pdf,zoom");
+        assert!(unknown.is_empty());
+        a.set_features(f);
+        let mut h = harness(a);
+        assert!(h.query_by_label_contains("Export a copy in another format").is_none(), "Export is hidden");
+        for gone in ["Open", "Print"] {
+            let tip = format!("{gone} (");
+            assert!(h.query_by_label(gone).is_none() && h.query_by_label_contains(&tip).is_none(), "{gone} is hidden");
+        }
+        for greyed in ["Export a copy as PDF", "Zoom In", "One Page"] {
+            let nodes: Vec<_> = h.query_all_by_label(greyed).collect();
+            assert!(!nodes.is_empty() && nodes.iter().all(|n| n.accesskit_node().is_disabled()), "{greyed} is greyed out");
+        }
+        assert!(h.query_all_by_label("Read Mode").all(|n| !n.accesskit_node().is_disabled()), "the rest still works");
+        let app = h.state_mut();
+        for (id, params) in [
+            ("file.open", json!({})),
+            ("ui.print", json!({})),
+            ("file.print", json!({})),
+            ("file.exportPdf", json!({})),
+            ("view.zoomIn", json!({})),
+            ("file.saveAs", json!({"path": dir.join("a.pdf").to_string_lossy()})),
+            ("file.saveAs", json!({"path": dir.join("a.odt").to_string_lossy(), "format": "odt"})),
+            ("ui.backstage", json!({"value": true, "page": "open"})),
+        ] {
+            assert!(app.run(id, params.clone()).is_err(), "{id} {params} is refused");
+        }
+        assert!(!dir.join("a.pdf").exists() && !dir.join("a.odt").exists());
+        assert!(crate::dialogs::Dialog::open("zoom", app).is_none(), "no Zoom dialog");
+        assert_eq!(super::backstage_start(app), Some("close"), "File starts on the first page left");
+        // A document the host hands over still opens.
+        app.run("file.open", json!({"path": src.to_string_lossy()})).unwrap();
+        assert_eq!(app.session.doc.plain_text(wordcraft_doc::StoryRef::Body), "Opened");
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    /// `?hide=toolbar,statusbar`: the page alone.
+    #[test]
+    fn the_toolbar_and_status_bar_can_be_hidden() {
+        let mut a = viewer("Hello world");
+        a.set_features(crate::features::ViewerFeatures::parse("toolbar,statusbar", "").0);
+        let h = harness(a);
+        for gone in ["Read Mode", "Zoom In", "Export a copy as PDF", "Focus", "Web Layout"] {
+            assert!(h.query_by_label(gone).is_none(), "{gone} is hidden");
+        }
+    }
+
+    /// `?disable=spellcheck`: no squiggles, and the spelling commands don't run.
+    #[test]
+    fn spellcheck_off_stops_checking() {
+        let mut a = viewer("helo wrld");
+        a.session.view.proofing = true;
+        let marked = |a: &mut WordApp| {
+            a.session.layout().pages[0].items.iter().any(|i| matches!(i, wordcraft_layout::Placed::Lines { para, .. } if !para.issues.is_empty()))
+        };
+        assert!(marked(&mut a));
+        a.set_features(crate::features::ViewerFeatures::parse("", "spellcheck").0);
+        assert!(!marked(&mut a));
+        assert!(a.run("review.spelling", json!({})).is_err());
+        assert!(!crate::widgets::enabled(&a, "review.spelling"));
     }
 }

@@ -62,6 +62,10 @@ pub struct Session {
     /// refuses every command that would edit them. App-wide, set by the host before it shows
     /// anything; every open document is read only.
     pub viewer: bool,
+    /// Proofing the host turned off (the viewer's `spelling` and `grammar` features,
+    /// `docs/viewer.md`): no squiggles of that kind, whatever the view and File › Options say.
+    /// App-wide. Change it with [`Session::set_proofing_off`], which lays the document out again.
+    pub proofing_off: crate::viewer::ProofingOff,
     /// Where the custom dictionary is kept on disk, if the host wired one up. Only the desktop
     /// app does: headless sessions (MCP, `wordcraft-cli run`), tests and the web build leave
     /// `None`, so an agent's words stay in memory and never change the person's dictionary.

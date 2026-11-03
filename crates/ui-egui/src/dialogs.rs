@@ -562,6 +562,10 @@ impl Dialog {
     }
 
     pub fn open(name: &str, app: &mut WordApp) -> Option<Dialog> {
+        // A feature the embedder turned off (`crate::features`) has no dialog either.
+        if crate::features::ViewerFeatures::dialog_features(name).iter().any(|&f| !app.allows(f)) {
+            return None;
+        }
         if let Some(d) = Self::open_viewing(name, app) {
             return Some(d);
         }

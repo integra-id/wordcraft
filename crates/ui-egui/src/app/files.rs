@@ -325,6 +325,11 @@ impl WordApp {
     /// drop would open or insert it again.
     #[cfg(not(target_arch = "wasm32"))]
     pub(super) fn open_dropped_files(&mut self, files: Vec<egui::DroppedFileHandle>) {
+        // A drop is the person opening a file: not when the embedder turned Open off
+        // (`crate::features`).
+        if !self.allows(crate::features::Feature::Open) {
+            return;
+        }
         let before = self.session.document_id();
         let mut placed_picture = false;
         for f in &files {

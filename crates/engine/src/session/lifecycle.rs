@@ -95,6 +95,7 @@ impl Session {
             user_dict_path: None,
             dirty,
             viewer: false,
+            proofing_off: Default::default(),
             clipboard: None,
             pending_move,
             clipboard_text: String::new(),

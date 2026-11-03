@@ -65,8 +65,13 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
         app.ui.backstage_page = "home".into();
     }
     // The viewer's File page has no New, Info, Save or Recover (`docs/viewer.md`).
-    if !crate::viewer::shows_backstage_page(app, &app.ui.backstage_page) {
-        app.ui.backstage_page = crate::viewer::BACKSTAGE_START.into();
+    // Nor the pages the embedder hid or turned off (`crate::features`); with none left, no File page.
+    if !crate::viewer::backstage_page_works(app, &app.ui.backstage_page) {
+        let Some(page) = crate::viewer::backstage_start(app) else {
+            app.ui.backstage = false;
+            return;
+        };
+        app.ui.backstage_page = page.into();
     }
     let mac = app.integrated_titlebar;
     egui::Panel::left("backstage_nav")
@@ -109,7 +114,7 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                     continue;
                 }
                 // No document open (#1129): Info, Save, Save As, Print and Export are greyed out.
-                let on = has_document || works_without_document(id);
+                let on = (has_document || works_without_document(id)) && app.features.page(id).1;
                 let (r, resp) = ui.add_enabled_ui(on, |ui| ui.allocate_exact_size(vec2(200.0, 38.0), Sense::click())).inner;
                 resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, on, tl!(label)));
                 let active = app.ui.backstage_page == id;
@@ -138,13 +143,25 @@ pub fn show(app: &mut WordApp, ui: &mut Ui) {
                 }
             }
             ui.with_layout(egui::Layout::bottom_up(egui::Align::Min), |ui| {
+                if !app.shows(crate::features::Feature::About) {
+                    return;
+                }
+                if !app.allows(crate::features::Feature::About) {
+                    ui.disable();
+                }
                 for (label, id) in [("About", "about"), ("Discord community", "discord")] {
                     let (r, resp) = ui.allocate_exact_size(vec2(200.0, 32.0), Sense::click());
                     resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, ui.is_enabled(), tl!(label)));
-                    if resp.hovered() {
+                    if resp.hovered() && ui.is_enabled() {
                         ui.painter().rect_filled(r, 0.0, egui::Color32::from_white_alpha(26));
                     }
-                    ui.painter().text(pos2(r.min.x + 22.0, r.center().y), Align2::LEFT_CENTER, tl!(label), regular(13.0), egui::Color32::WHITE);
+                    ui.painter().text(
+                        pos2(r.min.x + 22.0, r.center().y),
+                        Align2::LEFT_CENTER,
+                        tl!(label),
+                        regular(13.0),
+                        if ui.is_enabled() { egui::Color32::WHITE } else { egui::Color32::from_white_alpha(110) },
+                    );
                     if resp.clicked() {
                         if id == "discord" {
                             let _ = app.run("ui.discord", json!({}));
@@ -231,7 +248,7 @@ fn recovery_page(app: &mut WordApp, ui: &mut Ui) {
 /// Opens a side-menu page, as a click on it (or its keytip) does. Without a document only the
 /// pages that work without one open.
 pub(crate) fn go_to_page(app: &mut WordApp, id: &str) {
-    if (!app.has_document() && !works_without_document(id)) || !crate::viewer::shows_backstage_page(app, id) {
+    if (!app.has_document() && !works_without_document(id)) || !crate::viewer::backstage_page_works(app, id) {
         return;
     }
     match id {

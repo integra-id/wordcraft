@@ -3,7 +3,9 @@ use super::{Ui, WordApp, json};
 /// The spelling suggestions and synonyms the context menu offers for the selection or the word
 /// at the caret.
 pub(super) fn context_suggestions(app: &mut WordApp) {
-    app.canvas.context_issue = app.session.run("review.suggestions", &json!({})).ok().filter(|v| !v.is_null());
+    // Spelling or grammar turned off by the embedder (`crate::features`): no suggestions either.
+    let proofing = crate::features::refuses(app, "review.suggestions", None).is_none();
+    app.canvas.context_issue = app.session.run("review.suggestions", &json!({})).ok().filter(|v| proofing && !v.is_null());
     app.canvas.context_synonyms = app.session.run("review.thesaurus", &json!({})).ok().and_then(|v| v.get("synonyms").cloned());
 }
 
@@ -52,7 +54,14 @@ fn equation_menu(app: &mut WordApp, ui: &mut Ui) {
 /// edits.
 fn viewer_menu(app: &mut WordApp, ui: &mut Ui) {
     ui.set_min_width(200.0);
-    for (label, id) in [("Copy", "edit.copy"), ("Select All", "select.all"), ("Find…", "edit.find")] {
+    use crate::features::Feature;
+    for (label, id, f) in
+        [("Copy", "edit.copy", Some(Feature::Copy)), ("Select All", "select.all", None), ("Find…", "edit.find", Some(Feature::Find))]
+    {
+        // What the embedder hid is left out (`crate::features`).
+        if f.is_some_and(|f| !app.shows(f)) {
+            continue;
+        }
         let sc = crate::widgets::shortcut_text(app, id);
         let on = crate::widgets::enabled(app, id);
         if ui.add_enabled(on, egui::Button::new(tl!(label)).shortcut_text(sc)).clicked() {
@@ -63,6 +72,10 @@ fn viewer_menu(app: &mut WordApp, ui: &mut Ui) {
 }
 
 pub(super) fn context_menu(app: &mut WordApp, ui: &mut Ui) {
+    // The embedder turned the menu off (`crate::features`): drawn, but greyed out.
+    if !app.allows(crate::features::Feature::ContextMenu) {
+        ui.disable();
+    }
     if app.is_viewer() {
         return viewer_menu(app, ui);
     }

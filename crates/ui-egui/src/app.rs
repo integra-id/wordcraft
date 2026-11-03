@@ -136,6 +136,7 @@ impl WordApp {
             quit_requested: false,
             autosave: true,
             zotero: zotero::ZoteroLink::default(),
+            features: Default::default(),
             ctx: None,
             ime_origin: false,
             read_aloud_error: None,

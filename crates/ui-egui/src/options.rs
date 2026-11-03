@@ -139,11 +139,18 @@ pub fn page(app: &mut WordApp, ui: &mut Ui) {
     let t = Tokens::get(ui.ctx());
     ui.label(RichText::new(tl!("Options")).font(semibold(26.0)));
     ui.add_space(16.0);
-    let current = if PANES.contains(&app.ui.options_pane.as_str()) { app.ui.options_pane.clone() } else { "general".to_string() };
+    let current = if PANES.contains(&app.ui.options_pane.as_str()) && shows_pane(app, &app.ui.options_pane) {
+        app.ui.options_pane.clone()
+    } else {
+        "general".to_string()
+    };
     ui.horizontal_top(|ui| {
         ui.vertical(|ui| {
             ui.set_width(170.0);
             for id in PANES {
+                if !shows_pane(app, id) {
+                    continue;
+                }
                 let label = tl!(pane_label(id));
                 let active = current == id;
                 let (r, resp) = ui.allocate_exact_size(vec2(170.0, 30.0), egui::Sense::click());
@@ -294,7 +301,19 @@ fn display(app: &mut WordApp, ui: &mut Ui) {
     ui.checkbox(&mut app.ui.update_fields_before_print, tl!("Update fields before printing"));
 }
 
+/// Whether the Options page lists pane `id`: not Proofing when the embedder hid both spelling and
+/// grammar (`crate::features`).
+fn shows_pane(app: &WordApp, id: &str) -> bool {
+    use crate::features::Feature;
+    id != "proofing" || app.shows(Feature::Spelling) || app.shows(Feature::Grammar)
+}
+
 fn proofing(app: &mut WordApp, ui: &mut Ui) {
+    use crate::features::Feature;
+    // Spelling or grammar turned off by the embedder: the settings are there, greyed out.
+    if !app.allows(Feature::Spelling) || !app.allows(Feature::Grammar) {
+        ui.disable();
+    }
     section(ui, "AutoCorrect");
     if ui.button(tl!("AutoCorrect Options")).clicked() {
         let _ = app.run("tools.autocorrect", json!({}));
