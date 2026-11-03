@@ -68,6 +68,9 @@ pub fn start() {
                     let doc = if sample { wordcraft_engine::sample::sample_document() } else { wordcraft_engine::blank_document(&region) };
                     let mut session = Session::new(doc);
                     session.system_region = region;
+                    // The web app is the viewer too: the engine refuses every editing command
+                    // (`docs/viewer.md`).
+                    session.viewer = true;
                     let messages = Rc::new(RefCell::new(Vec::new()));
                     let mut services = services(inbox.clone(), cc.egui_ctx.clone(), dirty, saves.clone(), messages.clone());
                     if let Some(bridge) = &app_bridge {
@@ -87,9 +90,11 @@ pub fn start() {
                         app.session.set_document(doc);
                     }
                     let mut prefs = crate::prefs::PrefsSync::new(stored);
-                    // No document to show: start on File › Home, as the desktop app does (#766).
+                    // No document to show: the viewer starts empty, asking for a document to
+                    // open, as the desktop viewer does. In host mode the parent's document
+                    // replaces the empty window when it arrives.
                     if !sample {
-                        app.start_screen();
+                        app.start_empty();
                     }
                     // The host's name for the user signs this visit's work, but isn't stored as the
                     // browser's own preference, which a visit outside the host would restore.

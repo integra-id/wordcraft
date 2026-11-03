@@ -2,7 +2,7 @@
 
 > **Branch:** `office-viewer` · **Last updated:** 2026-11-03
 
-On this branch the `wordcraft` desktop app is **WordCraft Viewer**: it opens documents, shows
+On this branch the `wordcraft` desktop app and the `wordcraft-web` browser app are **WordCraft Viewer**: it opens documents, shows
 them read-only, prints them and exports or converts them to the formats WordCraft writes. Editing
 and the application ribbon/toolbar are turned off. Everything else (the importers, the layout
 engine, the PDF/PNG renderers and the exporters) is the same code the editor uses, so documents
@@ -61,13 +61,17 @@ history and dirty flag are unchanged.
 ## How it is built
 
 - Engine (`wordcraft-engine`): `Session::viewer: bool` (default `false`) and the `viewer`
-  module (`REASON`, `EDITING`, `refuses`). Off by default, so the CLI, the web build and every
+  module (`REASON`, `EDITING`, `refuses`). Off by default, so the CLI and every
   existing test behave as before.
 - UI (`wordcraft-ui-egui`): the `viewer` module (toolbar, empty window, `UI_EDITING`,
   `BACKSTAGE_PAGES`) and small checks of `session.viewer` in the frame layout, key handling,
   context menu, mini toolbar, keytips, Backstage and `WordApp::execute`.
 - App (`apps/wordcraft`): sets `session.viewer = true`, titles the window *WordCraft Viewer*
   and starts empty (`WordApp::start_empty`) when given nothing to open.
+- Web app (`apps/wordcraft-web`): sets `session.viewer = true` too and starts empty
+  (`?sample` opens the sample). Open (File › Open, drag and drop, `?host=parent`) reads the
+  file in the browser; Export, PDF and Print download the result. Build it small with
+  `trunk build --release --cargo-profile web` (`packaging/web/README.md`).
 - Screenshots: `{"viewer": true}` on the first line of a `ui_shot` script
   (`cargo run -p wordcraft-ui-egui --example ui_shot -- script.jsonl`).
 
