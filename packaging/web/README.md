@@ -140,6 +140,57 @@ https://example.com/wordcraft/?url=https%3A%2F%2Fcdn.example.org%2Fminutes.odt&n
 - `?url=` takes precedence over `?sample`, and is ignored with `?host=parent` (the parent page
   sends the document then).
 
+## Hiding or turning off features
+
+`?hide=` and `?disable=` take comma-separated feature names (any case; spaces, `-` and `_` are
+ignored, so `Spell-Check` is `spellcheck`). A **hidden** feature is not drawn at all; a
+**disabled** one is drawn greyed out and does nothing. Either way it is off: its toolbar button,
+File page, menu items, keyboard shortcuts and commands do nothing, and with `spelling` or
+`grammar` off nothing of that kind is marked. If a name is in both lists, hidden wins. Unknown
+names are ignored, with a warning in the browser console listing the names that work.
+
+```
+https://example.com/wordcraft/?url=/files/report.docx&hide=open,export,print&disable=pdf
+https://example.com/wordcraft/?url=/files/report.docx&hide=spellcheck,contextmenu,copy
+https://example.com/wordcraft/?url=/files/report.docx&hide=toolbar,statusbar
+<iframe src="https://example.com/wordcraft/?src=../docs/handbook.docx&hide=open&disable=print,pdf" ...>
+```
+
+| Name | What it controls |
+|---|---|
+| `open` | Opening a document yourself: the toolbar's **Open**, the empty window's **Open…**, Ctrl+O, File › Open, dropping a file on the window. `?url=` and `wordcraft:open` still open the document they name |
+| `export` | Saving a copy in another format: the toolbar's **Export**, File › Export (all formats but PDF), the Print page's format list |
+| `pdf` | Saving as PDF: the toolbar's **PDF**, Export › PDF, Print › *Save these pages as PDF…* |
+| `print` | Printing: the toolbar's **Print**, Ctrl+P, File › Print |
+| `spelling` | Spelling squiggles (red), the spelling and grammar pane and its suggestions |
+| `grammar` | Grammar squiggles (blue), the spelling and grammar pane |
+| `find` | Find (Ctrl+F), the Navigation pane button, the context menu's Find… |
+| `pagenav` | Next/Previous Page buttons, Go To (Ctrl+G), the status bar's page number |
+| `zoom` | One Page, Page Width, Zoom In/Out, the status bar's zoom, Ctrl+wheel |
+| `views` | Read Mode, Web Layout, Focus and Full Screen, and the status bar's view buttons (the Print Layout command itself stays allowed, as the way back) |
+| `copy` | Copying from the page (Ctrl+C, context menu Copy) |
+| `contextmenu` | The page's right-click menu |
+| `file` | The toolbar's **File** button (the File page still opens from Export or Print) |
+| `options` | File › Options |
+| `close` | File › Close and closing the document |
+| `wordcount` | The status bar's word count and the Word Count dialog |
+| `about` | About and the community link on the File page |
+| `toolbar` | The whole toolbar across the top |
+| `statusbar` | The whole status bar across the bottom |
+
+Groups: `spellcheck` and `proofing` are `spelling` and `grammar`; `save` is `export` and `pdf`.
+Other spellings: `goto` for `pagenav`, `search` for `find`, `help` for `about`.
+
+With `?host=parent` the parent can change the lists at any time with a `wordcraft:config`
+message, `{ type: "wordcraft:config", hide: "open,print", disable: ["pdf"] }` (each a
+comma-separated string or an array of names). It replaces the lists the URL gave:
+
+```js
+frame.contentWindow.postMessage({ type: "wordcraft:config", hide: "open,export", disable: "print" }, location.origin);
+```
+
+The same names work for the desktop viewer: `wordcraft --hide=open,export --disable pdf report.docx`.
+
 ## Embedding in a page (iframe)
 
 ```html
@@ -174,6 +225,8 @@ WordCraft renders with wgpu. It uses **WebGPU** when the browser has it and fall
 | `?webgl` | Force the WebGL2 backend (useful when a WebGPU driver misbehaves) |
 | `?sample` | Open the sample document |
 | `?url=ADDRESS` / `?src=ADDRESS` (`&name=NAME`) | Open the document at that address (see *Opening a document from an address*) |
+| `?hide=NAMES` | Leave those features out (see *Hiding or turning off features*) |
+| `?disable=NAMES` | Show those features greyed out and turned off |
 
 For example: `<iframe src="https://example.com/wordcraft/?webgl" ...>`.
 

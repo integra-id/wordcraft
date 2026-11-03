@@ -1,6 +1,6 @@
 # WordCraft Viewer
 
-> **Branch:** `office-viewer` · **Last updated:** 2026-11-03
+> **Branch:** `office-viewer` · **Last updated:** 2026-11-04
 
 On this branch the `wordcraft` desktop app and the `wordcraft-web` browser app are **WordCraft Viewer**: it opens documents, shows
 them read-only, prints them and exports or converts them to the formats WordCraft writes. Editing
@@ -57,6 +57,25 @@ Headless conversion needs no window: `wordcraft-cli convert IN OUT`
 Because nothing edits, a document never becomes dirty, there is nothing to save, and closing
 never asks. Export runs File › Save As's writers on a copy: the open document's path, undo
 history and dirty flag are unchanged.
+
+## Hiding or turning off features
+
+An embedder can hide features (not drawn) or disable them (drawn greyed out, inactive). Either
+way the feature is off: buttons, File pages, menu items, keyboard shortcuts and commands from
+the window refuse it (`crates/ui-egui/src/features.rs`), and with `spelling` or `grammar` off
+the layout marks no squiggles of that kind (`Session::set_proofing_off`; with both off nothing is
+checked). Feature names: `open`, `export`, `pdf`, `print`, `spelling`, `grammar`, `find`,
+`pagenav`, `zoom`, `views`, `copy`, `contextmenu`, `file`, `options`, `close`, `wordcount`,
+`about`, `toolbar`, `statusbar`; groups `spellcheck`/`proofing` (spelling + grammar) and `save`
+(export + pdf). The table of what each controls is in `packaging/web/README.md`.
+
+- Web: `index.html?url=/files/report.docx&hide=open,export,print&disable=pdf` (comma-separated,
+  any case, unknown names ignored with a console warning). With `?host=parent` the parent can
+  send `{ type: "wordcraft:config", hide, disable }` to replace the lists.
+- Desktop: `wordcraft --hide=open,export,print --disable pdf report.docx` (`--hide LIST` or
+  `--hide=LIST`, repeatable; unknown names are reported on standard error).
+- `open` off still opens what the host hands over (`?url=`, `wordcraft:open`, files on the
+  command line, the control channel); it stops the person opening one (Open, Ctrl+O, drops).
 
 ## How it is built
 
