@@ -26,8 +26,8 @@ mod names;
 use face::BUNDLED;
 use face::FontBytes;
 pub use face::{
-    FALLBACK_FAMILY, FETCHED_FILES, FaceRef, FontFace, INTERFACE_FILES, SOURCE_SANS_REGULAR, bundled, inter_medium, inter_regular, inter_semibold,
-    jetbrains_mono_regular,
+    FALLBACK_FAMILY, FETCHED_FILES, FaceRef, FontFace, INTER_MEDIUM, INTER_REGULAR, INTER_SEMIBOLD, JETBRAINS_MONO_REGULAR, SOURCE_SANS_REGULAR,
+    bundled,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use fallback_data::{CoverageIndex, SysFallback};
@@ -160,7 +160,7 @@ impl FontDb {
     #[cfg(feature = "fetched-fonts")]
     pub fn add_fetched(&self, name: &str, data: &'static [u8]) -> bool {
         let Some(i) = FETCHED_FILES.iter().position(|f| *f == name) else { return false };
-        let Some(slot) = face::FETCHED.get(i) else { return false };
+        let (Some(slot), Some(file_rank)) = (face::FETCHED.get(i), face::file_rank(name)) else { return false };
         if slot.set(data).is_err() {
             return false;
         }
@@ -182,7 +182,7 @@ impl FontDb {
             };
             let mut faces = self.faces.write().unwrap_or_else(|e| e.into_inner());
             // After the bundled faces that come before this file, before every other face.
-            let at = faces.iter().take_while(|f| rank(f).is_some_and(|r| r <= i)).count();
+            let at = faces.iter().take_while(|f| rank(f).is_some_and(|r| r <= file_rank)).count();
             faces.splice(at..at, new);
         }
         self.fonts_changed();

@@ -10,17 +10,17 @@ pub const FALLBACK_FAMILY: &str = "Source Sans 3";
 /// The bundled fonts (OFL), as font file bytes. Japanese fonts are not bundled: they come from
 /// the optional craft-fonts build input ([`crate::japanese_document_fonts`]).
 ///
-/// With the `fetched-fonts` feature (the web viewer) only Source Sans 3 Regular is compiled in;
-/// the app fetches the others ([`FETCHED_FILES`]) and adds them with
+/// With the `fetched-fonts` feature (the web viewer) only Source Sans 3 Regular and the interface
+/// fonts are compiled in; the app fetches the document fonts ([`FETCHED_FILES`]) and adds them with
 /// [`crate::FontDb::add_fetched`].
 pub fn bundled() -> &'static [&'static [u8]] {
     BUNDLED
 }
 
-/// The bundled font files besides Source Sans 3 Regular, by file name (in `assets/fonts`), in
-/// [`bundled`] order. The web viewer serves them next to the app and fetches them
-/// ([`crate::FontDb::add_fetched`]); other builds compile them in.
-pub const FETCHED_FILES: &[&str] = &[
+/// The bundled font files (in `assets/fonts`), in the order the font database has them.
+#[cfg(feature = "fetched-fonts")]
+const BUNDLED_FILES: [&str; 13] = [
+    "SourceSans3-Regular.ttf",
     "SourceSans3-Semibold.ttf",
     "SourceSans3-Bold.ttf",
     "SourceSans3-It.ttf",
@@ -35,9 +35,20 @@ pub const FETCHED_FILES: &[&str] = &[
     "JetBrainsMono-Regular.ttf",
 ];
 
-/// The [`FETCHED_FILES`] the interface draws with ([`inter_regular`] …): the web viewer waits
-/// for these before it starts, and adds the others (document fonts) as they arrive.
-pub const INTERFACE_FILES: &[&str] = &["Inter-Regular.ttf", "Inter-Medium.ttf", "Inter-SemiBold.ttf", "JetBrainsMono-Regular.ttf"];
+/// The bundled document fonts the web viewer fetches instead of compiling in
+/// ([`crate::FontDb::add_fetched`]), in [`bundled`] order. Every build compiles in the rest:
+/// Source Sans 3 Regular (the last-resort face) and the interface fonts, which the window needs
+/// before its first frame.
+pub const FETCHED_FILES: &[&str] = &[
+    "SourceSans3-Semibold.ttf",
+    "SourceSans3-Bold.ttf",
+    "SourceSans3-It.ttf",
+    "SourceSerif4-Regular.ttf",
+    "SourceSerif4-It.ttf",
+    "SourceSerif4-Semibold.ttf",
+    "SourceSerif4-Bold.ttf",
+    "SourceSerif4-BoldIt.ttf",
+];
 
 #[cfg(not(feature = "fetched-fonts"))]
 pub(super) static BUNDLED: &[&[u8]] = &[
@@ -50,64 +61,55 @@ pub(super) static BUNDLED: &[&[u8]] = &[
     include_bytes!("../../../../assets/fonts/SourceSerif4-Semibold.ttf"),
     include_bytes!("../../../../assets/fonts/SourceSerif4-Bold.ttf"),
     include_bytes!("../../../../assets/fonts/SourceSerif4-BoldIt.ttf"),
-    include_bytes!("../../../../assets/fonts/Inter-Regular.ttf"),
-    include_bytes!("../../../../assets/fonts/Inter-Medium.ttf"),
-    include_bytes!("../../../../assets/fonts/Inter-SemiBold.ttf"),
-    include_bytes!("../../../../assets/fonts/JetBrainsMono-Regular.ttf"),
+    INTER_REGULAR,
+    INTER_MEDIUM,
+    INTER_SEMIBOLD,
+    JETBRAINS_MONO_REGULAR,
 ];
 
+/// The compiled-in files of a `fetched-fonts` build, in [`bundled`] order.
 #[cfg(feature = "fetched-fonts")]
-pub(super) static BUNDLED: &[&[u8]] = &[SOURCE_SANS_REGULAR];
+pub(super) static BUNDLED: &[&[u8]] = &[SOURCE_SANS_REGULAR, INTER_REGULAR, INTER_MEDIUM, INTER_SEMIBOLD, JETBRAINS_MONO_REGULAR];
 
-/// Source Sans 3 Regular: the UI sans and the last-resort face, compiled in by every build.
+/// Source Sans 3 Regular: the UI sans and the last-resort face.
 pub static SOURCE_SANS_REGULAR: &[u8] = include_bytes!("../../../../assets/fonts/SourceSans3-Regular.ttf");
-
-/// The bundled file `name` (one of [`FETCHED_FILES`]), or Source Sans 3 Regular when the web
-/// viewer hasn't fetched it.
-fn bundled_file(name: &str) -> &'static [u8] {
-    FETCHED_FILES.iter().position(|f| *f == name).and_then(bundled_by_file).unwrap_or(SOURCE_SANS_REGULAR)
-}
-
-#[cfg(not(feature = "fetched-fonts"))]
-fn bundled_by_file(i: usize) -> Option<&'static [u8]> {
-    BUNDLED.get(i + 1).copied()
-}
-
-#[cfg(feature = "fetched-fonts")]
-fn bundled_by_file(i: usize) -> Option<&'static [u8]> {
-    FETCHED.get(i)?.get().copied()
-}
+/// Inter Regular, a bundled face the interface also draws with. The interface fonts take these
+/// statics instead of their own `include_bytes!`, so the binary (and the web download) holds
+/// one copy of each file.
+pub static INTER_REGULAR: &[u8] = include_bytes!("../../../../assets/fonts/Inter-Regular.ttf");
+/// Inter Medium; see [`INTER_REGULAR`].
+pub static INTER_MEDIUM: &[u8] = include_bytes!("../../../../assets/fonts/Inter-Medium.ttf");
+/// Inter SemiBold; see [`INTER_REGULAR`].
+pub static INTER_SEMIBOLD: &[u8] = include_bytes!("../../../../assets/fonts/Inter-SemiBold.ttf");
+/// JetBrains Mono Regular; see [`INTER_REGULAR`].
+pub static JETBRAINS_MONO_REGULAR: &[u8] = include_bytes!("../../../../assets/fonts/JetBrainsMono-Regular.ttf");
 
 /// The [`FETCHED_FILES`] that have arrived ([`crate::FontDb::add_fetched`]).
 #[cfg(feature = "fetched-fonts")]
 pub(super) static FETCHED: [std::sync::OnceLock<&'static [u8]>; FETCHED_FILES.len()] = [const { std::sync::OnceLock::new() }; FETCHED_FILES.len()];
 
-/// Where bundled font bytes `data` sit in [`bundled`] order (0 for Source Sans 3 Regular), or
-/// `None` for any other font.
+/// Where bundled font file `name` sits in the font database's order of bundled files.
 #[cfg(feature = "fetched-fonts")]
-pub(super) fn bundled_rank(data: &[u8]) -> Option<usize> {
-    if std::ptr::eq(data, SOURCE_SANS_REGULAR) {
-        return Some(0);
-    }
-    FETCHED.iter().position(|f| f.get().is_some_and(|d| std::ptr::eq(*d, data))).map(|i| i + 1)
+pub(super) fn file_rank(name: &str) -> Option<usize> {
+    BUNDLED_FILES.iter().position(|f| *f == name)
 }
 
-/// Inter Regular, the interface font. The interface takes the bundled faces' bytes, so the binary
-/// (or the web download) holds one copy of each file.
-pub fn inter_regular() -> &'static [u8] {
-    bundled_file("Inter-Regular.ttf")
-}
-/// Inter Medium; see [`inter_regular`].
-pub fn inter_medium() -> &'static [u8] {
-    bundled_file("Inter-Medium.ttf")
-}
-/// Inter SemiBold; see [`inter_regular`].
-pub fn inter_semibold() -> &'static [u8] {
-    bundled_file("Inter-SemiBold.ttf")
-}
-/// JetBrains Mono Regular; see [`inter_regular`].
-pub fn jetbrains_mono_regular() -> &'static [u8] {
-    bundled_file("JetBrainsMono-Regular.ttf")
+/// Where bundled font bytes `data` sit in the font database's order of bundled files, or `None`
+/// for any other font.
+#[cfg(feature = "fetched-fonts")]
+pub(super) fn bundled_rank(data: &[u8]) -> Option<usize> {
+    let compiled = [
+        (SOURCE_SANS_REGULAR, "SourceSans3-Regular.ttf"),
+        (INTER_REGULAR, "Inter-Regular.ttf"),
+        (INTER_MEDIUM, "Inter-Medium.ttf"),
+        (INTER_SEMIBOLD, "Inter-SemiBold.ttf"),
+        (JETBRAINS_MONO_REGULAR, "JetBrainsMono-Regular.ttf"),
+    ];
+    let name = compiled.iter().find(|(d, _)| std::ptr::eq(*d, data)).map(|(_, n)| *n).or_else(|| {
+        let i = FETCHED.iter().position(|f| f.get().is_some_and(|d| std::ptr::eq(*d, data)))?;
+        FETCHED_FILES.get(i).copied()
+    })?;
+    file_rank(name)
 }
 
 #[derive(Clone)]

@@ -409,22 +409,28 @@ fn named_instances_and_collection_members_are_capped() {
     assert!(started.elapsed() < std::time::Duration::from_secs(10), "{:?}", started.elapsed());
 }
 
-/// `FETCHED_FILES` names the compiled-in files in `bundled()` order (the web viewer fetches them
-/// by these names), and the interface fonts are those files.
+/// `FETCHED_FILES` names compiled-in files in `bundled()` order (the web viewer fetches them by
+/// these names), and the interface fonts are bundled files.
 #[test]
 #[cfg(not(feature = "fetched-fonts"))]
-fn fetched_files_name_the_bundled_files_in_order() {
+fn fetched_files_name_bundled_files_in_order() {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets/fonts");
-    assert_eq!(BUNDLED.len(), super::FETCHED_FILES.len() + 1);
+    let at = |name: &str| {
+        let bytes = std::fs::read(dir.join(name)).unwrap();
+        BUNDLED.iter().position(|b| *b == bytes.as_slice()).unwrap_or_else(|| panic!("{name} isn't bundled"))
+    };
+    let order: Vec<usize> = super::FETCHED_FILES.iter().map(|n| at(n)).collect();
+    assert!(order.windows(2).all(|w| w[0] < w[1]), "{order:?}");
+    assert_eq!(BUNDLED.len(), super::FETCHED_FILES.len() + 5);
     assert_eq!(BUNDLED[0], super::SOURCE_SANS_REGULAR);
-    for (name, bytes) in super::FETCHED_FILES.iter().zip(&BUNDLED[1..]) {
-        assert_eq!(std::fs::read(dir.join(name)).unwrap(), *bytes, "{name}");
+    for (name, bytes) in [
+        ("Inter-Regular.ttf", super::INTER_REGULAR),
+        ("Inter-Medium.ttf", super::INTER_MEDIUM),
+        ("Inter-SemiBold.ttf", super::INTER_SEMIBOLD),
+        ("JetBrainsMono-Regular.ttf", super::JETBRAINS_MONO_REGULAR),
+    ] {
+        assert!(std::ptr::eq(BUNDLED[at(name)], bytes), "{name}: one copy of each file");
     }
-    assert_eq!(std::fs::read(dir.join("Inter-Regular.ttf")).unwrap(), super::inter_regular());
-    assert_eq!(std::fs::read(dir.join("Inter-Medium.ttf")).unwrap(), super::inter_medium());
-    assert_eq!(std::fs::read(dir.join("Inter-SemiBold.ttf")).unwrap(), super::inter_semibold());
-    assert_eq!(std::fs::read(dir.join("JetBrainsMono-Regular.ttf")).unwrap(), super::jetbrains_mono_regular());
-    assert!(std::ptr::eq(super::inter_regular(), BUNDLED[9]), "one copy of each file");
 }
 
 /// The web viewer's fetched fonts (`fetched-fonts`) join the bundled faces in the compiled-in
@@ -451,5 +457,6 @@ fn fetched_fonts_join_in_bundled_order() {
     assert!(first("Source Serif 4") < first("Inter"));
     assert!(first("Inter") < first("JetBrains Mono"));
     assert_eq!(order[0], "Source Sans 3 Regular");
-    assert_eq!(super::inter_regular(), std::fs::read(dir.join("Inter-Regular.ttf")).unwrap());
+    let serif = order.iter().filter(|f| f.starts_with("Source Serif 4")).count();
+    assert_eq!(serif, 5, "{order:?}");
 }

@@ -28,8 +28,8 @@ pub fn start() {
             log::error!("missing <canvas id=\"{CANVAS_ID}\">");
             return;
         };
-        // The interface fonts, before the interface starts; the document fonts follow.
-        let document_fonts = fetch_fonts().await;
+        // The document fonts arrive while the app starts (`add_document_fonts`).
+        let document_fonts = fetch_fonts();
         // `?host=parent`: a same-origin page framing WordCraft opens documents in it and stores
         // what it saves (`host`). That page guards leaving it, so this one doesn't.
         let bridge = if query_param("host").as_deref() == Some("parent") { crate::host::Bridge::new() } else { None };
@@ -131,24 +131,19 @@ pub fn start() {
 /// A font file on its way (`fetch_fonts`).
 type PendingFont = (&'static str, wasm_bindgen_futures::JsFuture);
 
-/// Fetch the bundled fonts the web build doesn't compile in (`wordcraft_fonts::FETCHED_FILES`)
-/// from `fonts/` beside the app (Trunk copies `assets/fonts` there; `index.html` preloads them,
-/// so they download alongside the wasm). Waits for the interface's own fonts
-/// (`wordcraft_fonts::INTERFACE_FILES`) and returns the document fonts still on their way
-/// (`add_document_fonts`). A file that doesn't arrive is drawn with the compiled-in Source Sans 3.
-async fn fetch_fonts() -> Vec<PendingFont> {
+/// Start fetching the bundled document fonts the web build doesn't compile in
+/// (`wordcraft_fonts::FETCHED_FILES`) from `fonts/` beside the app (Trunk copies `assets/fonts`
+/// there; `index.html` preloads them, so they download alongside the wasm).
+fn fetch_fonts() -> Vec<PendingFont> {
     let Some(window) = web_sys::window() else { return Vec::new() };
-    let (interface, document): (Vec<PendingFont>, Vec<PendingFont>) = wordcraft_fonts::FETCHED_FILES
+    wordcraft_fonts::FETCHED_FILES
         .iter()
         .map(|name| (*name, wasm_bindgen_futures::JsFuture::from(window.fetch_with_str(&format!("fonts/{name}")))))
-        .partition(|(name, _)| wordcraft_fonts::INTERFACE_FILES.contains(name));
-    for (name, response) in interface {
-        add_font(name, response).await;
-    }
-    document
+        .collect()
 }
 
-/// Add the document fonts as they arrive; the app lays out again with each.
+/// Add the document fonts as they arrive; the app lays out again with each. Until one does, its
+/// text is drawn with Source Sans 3, as with a missing font; one that never arrives stays so.
 fn add_document_fonts(pending: Vec<PendingFont>, ctx: egui::Context) {
     wasm_bindgen_futures::spawn_local(async move {
         for (name, response) in pending {
