@@ -87,6 +87,9 @@ history and dirty flag are unchanged.
   fonts and Source Sans 3 Regular are compiled in; the other eight bundled document faces
   (`wordcraft_fonts::FETCHED_FILES`) are fetched from `fonts/` without holding up start-up and
   join the font database in bundled order (`FontDb::add_fetched`), which relays documents out.
+- WebAssembly SIMD (`.cargo/config.toml`, `+simd128` for wasm32): fearless_simd compiles its
+  simd128 level instead of the scalar fallback, so the viewer needs Chrome/Edge 91+, Firefox 89+
+  or Safari 16.4+.
 - egui's default faces (`wordcraft-ui-egui` feature `egui-fonts`, off for the web app): Hack,
   Ubuntu Light, egui's icons and the monochrome emoji are fetched from `egui-fonts/` after start-up
   (`EGUI_FACE_FILES`) and take egui's places in the interface fonts as they arrive

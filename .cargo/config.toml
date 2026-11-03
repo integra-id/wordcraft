@@ -1,2 +1,9 @@
 [alias]
 xtask = "run --package xtask --"
+
+# The web viewer: WebAssembly SIMD (every browser with WebGPU or WebGL2 that the viewer supports:
+# Chrome/Edge 91+, Firefox 89+, Safari 16.4+). fearless_simd (epaint's and wordcraft-render's
+# vello_cpu) then compiles its simd128 level instead of the larger scalar fallback; `index.html`
+# lets wasm-opt keep the instructions (`--enable-simd`).
+[target.wasm32-unknown-unknown]
+rustflags = ["-Ctarget-feature=+simd128"]
