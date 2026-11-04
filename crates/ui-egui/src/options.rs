@@ -319,11 +319,15 @@ fn display(app: &mut WordApp, ui: &mut Ui) {
 }
 
 fn proofing(app: &mut WordApp, ui: &mut Ui) {
-    section(ui, "AutoCorrect");
-    if ui.button(tl!("AutoCorrect Options")).clicked() {
-        let _ = app.run("tools.autocorrect", json!({}));
+    // The viewer edits nothing: no AutoCorrect, and no custom dictionary to add words to.
+    let viewer = app.is_viewer();
+    if !viewer {
+        section(ui, "AutoCorrect");
+        if ui.button(tl!("AutoCorrect Options")).clicked() {
+            let _ = app.run("tools.autocorrect", json!({}));
+        }
+        ui.add_space(8.0);
     }
-    ui.add_space(8.0);
     section(ui, "Spelling");
     let pr = app.session.prefs.clone();
     flag(app, ui, "Ignore words in capitals", "ignoreUppercase", pr.ignore_uppercase);
@@ -334,6 +338,9 @@ fn proofing(app: &mut WordApp, ui: &mut Ui) {
     let spelling = app.session.view.proofing;
     flag(app, ui, "Check spelling as you type", "checkSpelling", spelling);
     ui.add_enabled_ui(app.session.view.proofing, |ui| flag(app, ui, "Mark grammar errors as you type", "markGrammar", pr.mark_grammar));
+    if viewer {
+        return;
+    }
     ui.add_space(8.0);
     section(ui, "Custom dictionary");
     custom_dictionary(app, ui);
@@ -525,6 +532,11 @@ fn language(app: &mut WordApp, ui: &mut Ui) {
             .unwrap_or_else(|| crate::i18n::fmt(tl!("Spelling and grammar are checked in {language}."), &[("language", &lang)]))
     };
     ui.label(RichText::new(text).small().weak());
+    // The viewer keeps the interface language and shows the proofing language; adding
+    // languages, language packs and the dictionaries are proofing setup it doesn't change.
+    if app.is_viewer() {
+        return;
+    }
     ui.add_space(8.0);
     crate::language_packs::your_languages_section(app, ui);
     ui.add_space(8.0);

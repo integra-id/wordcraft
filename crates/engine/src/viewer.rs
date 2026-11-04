@@ -75,6 +75,10 @@ pub const EDITING: &[&str] = &[
     // The default language of new blank documents (Options › Language › Set as default): the
     // viewer makes none.
     "review.language.preferred",
+    // Installing and removing language packs (Options › Language): the viewer changes no
+    // proofing setup.
+    "proof.installPack",
+    "proof.removePack",
     // Macros, AutoCorrect and customising the editing UI.
     "tools.recordMacro",
     "tools.macros",
@@ -86,6 +90,10 @@ pub const EDITING: &[&str] = &[
     "arrange.selectionPane",
 ];
 
+/// File › Options settings the viewer refuses (`file.options` itself stays, for the panes and
+/// the view settings): the dictionaries folder and the custom dictionary's words.
+pub const EDITING_OPTIONS: &[&str] = &["dictionariesFolder", "addWords", "removeWords"];
+
 /// Command namespaces the viewer refuses whole: mail merge edits the document or makes new ones.
 pub const EDITING_NAMESPACES: &[&str] = &["mailings."];
 
@@ -93,4 +101,10 @@ pub const EDITING_NAMESPACES: &[&str] = &["mailings."];
 /// `None` when the viewer runs it.
 pub fn refuses(id: &str, mutates: bool) -> Option<&'static str> {
     (mutates || EDITING.contains(&id) || EDITING_NAMESPACES.iter().any(|ns| id.starts_with(ns))).then_some(REASON)
+}
+
+/// Why viewer mode refuses running `id` with `params` though it runs `id` itself: a
+/// `file.options` that changes the dictionaries ([`EDITING_OPTIONS`]).
+pub fn refuses_params(id: &str, params: &serde_json::Value) -> Option<&'static str> {
+    (id == "file.options" && EDITING_OPTIONS.iter().any(|k| params.get(k).is_some())).then_some(REASON)
 }

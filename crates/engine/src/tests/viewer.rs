@@ -161,3 +161,22 @@ fn viewer_opens_and_exports() {
     }
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// Language packs and the dictionaries are proofing setup, not viewing: the viewer refuses
+/// installing or removing a pack and changing the dictionaries folder or the custom dictionary,
+/// while File › Options itself still opens.
+#[test]
+fn viewer_refuses_packs_and_dictionaries() {
+    let mut s = viewer_session();
+    for (id, params) in [
+        ("proof.installPack", json!({"locale": "nl"})),
+        ("proof.removePack", json!({"locale": "nl"})),
+        ("file.options", json!({"dictionariesFolder": "/tmp"})),
+        ("file.options", json!({"addWords": ["Studio"]})),
+        ("file.options", json!({"removeWords": ["Studio"]})),
+    ] {
+        let r = s.run(id, &params);
+        assert!(matches!(r, Err(CmdError::Disabled(ref m)) if m.contains(viewer::REASON)), "{id} {params} ran in the viewer: {r:?}");
+    }
+    assert!(s.run("file.options", &json!({"pane": "language"})).is_ok(), "Options opens in the viewer");
+}

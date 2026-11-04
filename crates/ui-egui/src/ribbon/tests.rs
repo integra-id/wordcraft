@@ -709,6 +709,20 @@ fn language_menu_reaches_every_language() {
     assert_eq!(language_name(Some("de-DE")), "German (Germany)");
 }
 
+/// The viewer's language menu has no Language Preferences… (Options › Language there has no
+/// languages to add).
+#[test]
+fn the_viewer_language_menu_has_no_language_preferences() {
+    use egui_kittest::kittest::{By, Queryable};
+    let mut session = Session::new(wordcraft_doc::Document::from_text("Bonjour"));
+    session.viewer = true;
+    let app = WordApp::new(session, crate::Services::default());
+    let mut h = egui_kittest::Harness::builder().with_size(vec2(400.0, 600.0)).build_ui_state(|ui, app: &mut WordApp| language_menu(ui, app), app);
+    h.run();
+    assert!(h.query(By::new().label_contains("Set Proofing Language…")).is_some());
+    assert!(h.query(By::new().label_contains("Language Preferences…")).is_none());
+}
+
 /// #1281: every short-list entry (the four Englishes, Indonesian…) is picked in the menu:
 /// clicking it sets the selection's proofing language, and the entry is then the checked one.
 #[test]
