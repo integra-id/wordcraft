@@ -76,7 +76,7 @@ impl Session {
             || (id == "text.insert" && ime_text_join.as_ref().is_some_and(|sel| sel == &self.sel));
         // Viewer mode: nothing that edits the document runs, whoever asks (UI, control, MCP).
         if self.viewer
-            && let Some(why) = crate::viewer::refuses(id, spec.mutates)
+            && let Some(why) = crate::viewer::refuses(id, spec.mutates).or_else(|| crate::viewer::refuses_params(id, params))
         {
             return Err(CmdError::Disabled(format!("{id}: {why}")));
         }

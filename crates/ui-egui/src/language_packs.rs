@@ -236,6 +236,10 @@ fn consent(app: &mut WordApp, ctx: &egui::Context, key: &str) -> bool {
 
 /// Install `pack` (on the engine's thread): the person clicked Install.
 fn start_install(app: &mut WordApp, ctx: &egui::Context, pack: &Pack) {
+    // The viewer installs nothing (its Options › Language has no packs to offer).
+    if app.is_viewer() {
+        return;
+    }
     app.packs_rt.errors.remove(&pack.locale);
     if !consent(app, ctx, &pack.locale) {
         return;
@@ -249,6 +253,10 @@ fn start_install(app: &mut WordApp, ctx: &egui::Context, pack: &Pack) {
 /// Fetch the list again (on the engine's thread): the person clicked Add a language…
 /// or Refresh.
 fn start_fetch(app: &mut WordApp, ctx: &egui::Context) {
+    // The viewer installs nothing (its Options › Language has no packs to offer).
+    if app.is_viewer() {
+        return;
+    }
     app.packs_rt.errors.remove("");
     if !consent(app, ctx, "") {
         return;
@@ -298,6 +306,10 @@ fn missing(app: &mut WordApp, now: f64) -> Offers {
 /// turns on downloading ([`consent`]); the list is fetched, then the pack installed if it lists
 /// one (on the engine's thread).
 fn start_get(app: &mut WordApp, ctx: &egui::Context, tag: &str) {
+    // The viewer installs nothing (its Options › Language has no packs to offer).
+    if app.is_viewer() {
+        return;
+    }
     app.packs_rt.errors.remove("");
     if !consent(app, ctx, "") {
         return;
@@ -315,9 +327,10 @@ fn start_get(app: &mut WordApp, ctx: &egui::Context, tag: &str) {
 /// for the first language of the document with an available pack that isn't installed. Closing it
 /// hides it for that language in this document. Never shown for a language with no pack.
 pub(crate) fn bar(app: &mut WordApp, ui: &mut Ui) {
-    // Nothing to offer when the embedder turned spelling and grammar off (`crate::features`).
+    // Nothing to offer when the embedder turned spelling and grammar off (`crate::features`), or
+    // in the viewer, which installs no packs.
     use crate::features::Feature;
-    if packs::backend().is_none() || (!app.allows(Feature::Spelling) && !app.allows(Feature::Grammar)) {
+    if packs::backend().is_none() || app.is_viewer() || (!app.allows(Feature::Spelling) && !app.allows(Feature::Grammar)) {
         return;
     }
     let document = app.session.document_id();
@@ -1372,6 +1385,29 @@ mod tests {
 
     fn has(tree: &egui::accesskit::TreeUpdate, label: &str) -> bool {
         labels(tree).iter().any(|l| l == label)
+    }
+
+    /// The viewer's Options › Language keeps the interface language and the proofing language,
+    /// and leaves out Your languages, Add a language and the Dictionaries; its Proofing tab has
+    /// no AutoCorrect or custom dictionary.
+    #[test]
+    fn the_viewer_has_no_packs_or_dictionaries_in_options() {
+        let _g = BACKEND_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let _reset = ResetBackend;
+        let (mut a, ctx, _backend) = options_app("language", true);
+        a.session.viewer = true;
+        let all = labels(&settled(&mut a, &ctx));
+        assert!(all.iter().any(|l| l == "Interface language:"), "{all:?}");
+        assert!(all.iter().any(|l| l == "Proofing language"), "{all:?}");
+        for gone in ["Your languages", "Add a language…", "Dictionaries", "Dictionaries folder:", "Dictionary files", "Built in"] {
+            assert!(!all.iter().any(|l| l == gone), "{gone} in the viewer: {all:?}");
+        }
+        a.ui.options_pane = "proofing".into();
+        let all = labels(&settled(&mut a, &ctx));
+        assert!(all.iter().any(|l| l == "Check spelling as you type"), "{all:?}");
+        for gone in ["AutoCorrect Options", "Custom dictionary", "New word"] {
+            assert!(!all.iter().any(|l| l == gone), "{gone} in the viewer: {all:?}");
+        }
     }
 
     /// A fresh install lists English, built in and the default; with Dutch installed, Dutch is a

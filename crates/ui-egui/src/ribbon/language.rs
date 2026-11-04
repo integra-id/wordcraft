@@ -397,7 +397,10 @@ pub(crate) fn language_menu(ui: &mut Ui, app: &mut WordApp) {
     mi_check(ui, app, "Do Not Check Spelling or Grammar", no_proof, "review.language", json!({"noProof": !no_proof}));
     ui.separator();
     mi_check(ui, app, "Set Proofing Language…", false, "review.language", json!({}));
-    mi_check(ui, app, "Language Preferences…", false, "file.options", json!({"pane": "language"}));
+    // Options › Language is for adding languages and packs, which the viewer doesn't.
+    if !app.is_viewer() {
+        mi_check(ui, app, "Language Preferences…", false, "file.options", json!({"pane": "language"}));
+    }
 }
 
 /// The Language menu's check marks for the `current` tag: which `entries` (tag, English name) are
