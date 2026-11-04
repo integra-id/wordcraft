@@ -72,6 +72,9 @@ pub const EDITING: &[&str] = &[
     "review.addToDictionary",
     "review.ignoreAll",
     "review.editor",
+    // The default language of new blank documents (Options › Language › Set as default): the
+    // viewer makes none.
+    "review.language.preferred",
     // Macros, AutoCorrect and customising the editing UI.
     "tools.recordMacro",
     "tools.macros",

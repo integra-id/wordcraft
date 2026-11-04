@@ -568,6 +568,7 @@ pub(crate) fn your_languages_section(app: &mut WordApp, ui: &mut Ui) {
     let mut install = None;
     let mut removal = None;
     let mut default = None;
+    let viewer = app.is_viewer();
     // As wide as the window leaves room for (the rows scroll sideways in a narrow one).
     let room = (ui.ctx().content_rect().right() - ui.cursor().min.x - 16.0).clamp(200.0, 760.0);
     let narrow = room < 660.0;
@@ -579,7 +580,9 @@ pub(crate) fn your_languages_section(app: &mut WordApp, ui: &mut Ui) {
                 for (name, detail, row) in &view {
                     let mut actions = |ui: &mut Ui| {
                         ui.with_layout(egui::Layout::left_to_right(egui::Align::TOP), |ui| {
+                            // The viewer makes no blank documents (`review.language.preferred` is refused).
                             if !row.default
+                                && !viewer
                                 && ui
                                     .small_button(tl!("Set as default"))
                                     .on_hover_text(tl!("New blank documents are written in this language"))
