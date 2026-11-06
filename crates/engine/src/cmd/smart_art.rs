@@ -131,7 +131,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"variant": "accent1|accent2|accent3|accent4|accent5|accent6|colorful"} (the items' own colours are dropped)"#)
         .when(has_smart_art),
-        CommandSpec::new("smartArt.itemColor", "Item Color", "SmartArt Design › SmartArt Styles", |s, v| {
+        spec!("smartArt.itemColor", "Item Color", "SmartArt Design › SmartArt Styles", |s, v| {
             let i = index(v, "index")?;
             let color = match v.get("color") {
                 None | Some(Value::Null) => None,
