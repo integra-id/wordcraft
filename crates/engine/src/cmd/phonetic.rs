@@ -12,7 +12,7 @@ const MAX_CHARS: usize = 255;
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("format.phonetic", "Phonetic Guide", "Home › Font", phonetic).params(
+        spec!("format.phonetic", "Phonetic Guide", "Home › Font", phonetic).params(
             r#"{"ruby"?: string | null, "align"?: "center|distributeLetter|distributeSpace|left|right|rightVertical", "size"?: number, "offset"?: number}"#,
         ),
     ]

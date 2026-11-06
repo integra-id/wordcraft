@@ -11,57 +11,46 @@ const EXTEND: &str = r#"{"extend"?: bool}"#;
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("caret.left", "Left", "Navigation", |s, v| lr(s, v, true)).key("Left").params(EXTEND).pure(),
-        CommandSpec::new("caret.right", "Right", "Navigation", |s, v| lr(s, v, false)).key("Right").params(EXTEND).pure(),
-        CommandSpec::new("caret.up", "Up", "Navigation", |s, v| vert(s, v, -1)).key("Up").params(EXTEND).pure(),
-        CommandSpec::new("caret.down", "Down", "Navigation", |s, v| vert(s, v, 1)).key("Down").params(EXTEND).pure(),
+        spec!("caret.left", "Left", "Navigation", |s, v| lr(s, v, true)).key("Left").params(EXTEND).pure(),
+        spec!("caret.right", "Right", "Navigation", |s, v| lr(s, v, false)).key("Right").params(EXTEND).pure(),
+        spec!("caret.up", "Up", "Navigation", |s, v| vert(s, v, -1)).key("Up").params(EXTEND).pure(),
+        spec!("caret.down", "Down", "Navigation", |s, v| vert(s, v, 1)).key("Down").params(EXTEND).pure(),
         // In a right-to-left paragraph the word to the left is the next one. On macOS ⌘←/⌘→ go
         // to the line's start and end, as in Word for Mac and every Mac text field (#954).
-        CommandSpec::new("caret.wordLeft", "Word Left", "Navigation", |s, v| mv(s, v, if rtl_para(s) { word_right } else { word_left }))
+        spec!("caret.wordLeft", "Word Left", "Navigation", |s, v| mv(s, v, if rtl_para(s) { word_right } else { word_left }))
             .key(super::mac_or("Alt+Left", "Mod+Left / Alt+Left"))
             .params(EXTEND)
             .pure(),
-        CommandSpec::new("caret.wordRight", "Word Right", "Navigation", |s, v| mv(s, v, if rtl_para(s) { word_left } else { word_right }))
+        spec!("caret.wordRight", "Word Right", "Navigation", |s, v| mv(s, v, if rtl_para(s) { word_left } else { word_right }))
             .key(super::mac_or("Alt+Right", "Mod+Right / Alt+Right"))
             .params(EXTEND)
             .pure(),
-        CommandSpec::new("caret.home", "Line Start", "Navigation", |s, v| line(s, v, true))
-            .key(super::mac_or("Home / Mod+Left", "Home"))
-            .params(EXTEND)
-            .pure(),
-        CommandSpec::new("caret.end", "Line End", "Navigation", |s, v| line(s, v, false))
-            .key(super::mac_or("End / Mod+Right", "End"))
-            .params(EXTEND)
-            .pure(),
-        CommandSpec::new("caret.paraUp", "Paragraph Up", "Navigation", |s, v| mv(s, v, para_up)).key("Mod+Up / Alt+Up").params(EXTEND).pure(),
-        CommandSpec::new("caret.paraDown", "Paragraph Down", "Navigation", |s, v| mv(s, v, para_down))
-            .key("Mod+Down / Alt+Down")
-            .params(EXTEND)
-            .pure(),
-        CommandSpec::new("caret.docStart", "Document Start", "Navigation", |s, v| mv(s, v, |s, _| s.doc.start_of(s.sel.focus.story)))
+        spec!("caret.home", "Line Start", "Navigation", |s, v| line(s, v, true)).key(super::mac_or("Home / Mod+Left", "Home")).params(EXTEND).pure(),
+        spec!("caret.end", "Line End", "Navigation", |s, v| line(s, v, false)).key(super::mac_or("End / Mod+Right", "End")).params(EXTEND).pure(),
+        spec!("caret.paraUp", "Paragraph Up", "Navigation", |s, v| mv(s, v, para_up)).key("Mod+Up / Alt+Up").params(EXTEND).pure(),
+        spec!("caret.paraDown", "Paragraph Down", "Navigation", |s, v| mv(s, v, para_down)).key("Mod+Down / Alt+Down").params(EXTEND).pure(),
+        spec!("caret.docStart", "Document Start", "Navigation", |s, v| mv(s, v, |s, _| s.doc.start_of(s.sel.focus.story)))
             .key("Mod+Home")
             .params(EXTEND)
             .pure(),
-        CommandSpec::new("caret.docEnd", "Document End", "Navigation", |s, v| mv(s, v, |s, _| s.doc.end_of(s.sel.focus.story)))
+        spec!("caret.docEnd", "Document End", "Navigation", |s, v| mv(s, v, |s, _| s.doc.end_of(s.sel.focus.story)))
             .key("Mod+End")
             .params(EXTEND)
             .pure(),
-        CommandSpec::new("caret.pageUp", "Page Up", "Navigation", |s, v| page(s, v, -1)).key("PageUp").params(EXTEND).pure(),
-        CommandSpec::new("caret.pageDown", "Page Down", "Navigation", |s, v| page(s, v, 1)).key("PageDown").params(EXTEND).pure(),
-        CommandSpec::new("caret.set", "Set Caret", "Navigation", set)
-            .params(r#"{"pos": Pos, "extend"?: bool} | {"page": n, "x": pt, "y": pt}"#)
-            .pure(),
-        CommandSpec::new("select.all", "Select All", "Home › Editing › Select", select_all).key("Mod+A").pure(),
-        CommandSpec::new("select.range", "Select Range", "Navigation", select_range).params(r#"{"anchor": Pos, "focus": Pos}"#).pure(),
-        CommandSpec::new("select.word", "Select Word", "Navigation", select_word).pure(),
-        CommandSpec::new("select.sentence", "Select Sentence", "Navigation", select_sentence).pure(),
-        CommandSpec::new("select.paragraph", "Select Paragraph", "Navigation", select_paragraph).pure(),
-        CommandSpec::new("select.dragUnit", "Extend Selection by Units", "Navigation", drag_unit)
+        spec!("caret.pageUp", "Page Up", "Navigation", |s, v| page(s, v, -1)).key("PageUp").params(EXTEND).pure(),
+        spec!("caret.pageDown", "Page Down", "Navigation", |s, v| page(s, v, 1)).key("PageDown").params(EXTEND).pure(),
+        spec!("caret.set", "Set Caret", "Navigation", set).params(r#"{"pos": Pos, "extend"?: bool} | {"page": n, "x": pt, "y": pt}"#).pure(),
+        spec!("select.all", "Select All", "Home › Editing › Select", select_all).key("Mod+A").pure(),
+        spec!("select.range", "Select Range", "Navigation", select_range).params(r#"{"anchor": Pos, "focus": Pos}"#).pure(),
+        spec!("select.word", "Select Word", "Navigation", select_word).pure(),
+        spec!("select.sentence", "Select Sentence", "Navigation", select_sentence).pure(),
+        spec!("select.paragraph", "Select Paragraph", "Navigation", select_paragraph).pure(),
+        spec!("select.dragUnit", "Extend Selection by Units", "Navigation", drag_unit)
             .params(r#"{"unit": "word|sentence|line|paragraph|document", "start": Pos, "end": Pos, "pos": Pos}"#)
             .pure(),
-        CommandSpec::new("select.line", "Select Line", "Navigation", select_line).params(r#"{"pos"?: Pos}"#).pure(),
-        CommandSpec::new("select.text", "Select Text", "Navigation", select_text).params(r#"{"text": string, "occurrence"?: n}"#).pure(),
-        CommandSpec::new("select.collapse", "Collapse Selection", "Navigation", |s, v| {
+        spec!("select.line", "Select Line", "Navigation", select_line).params(r#"{"pos"?: Pos}"#).pure(),
+        spec!("select.text", "Select Text", "Navigation", select_text).params(r#"{"text": string, "occurrence"?: n}"#).pure(),
+        spec!("select.collapse", "Collapse Selection", "Navigation", |s, v| {
             let to_end = p::bool(v, "end").unwrap_or(false);
             let (a, b) = s.sel.ordered();
             s.sel = Selection::caret(if to_end { b } else { a });

@@ -32,10 +32,10 @@ pub use styles::{Cite, CiteStyle, Name, Names, Order, STYLES, find_style, style}
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("references.sources", "Manage Sources", "References › Citations & Bibliography", sources)
+        spec!("references.sources", "Manage Sources", "References › Citations & Bibliography", sources)
             .params(r#"{"add"?: Source, "remove"?: tag, "import"?: path (a Word bibliography file, `b:Sources` / `Sources.xml`)} → list"#),
-        CommandSpec::new("references.citation", "Insert Citation", "References › Citations & Bibliography", citation).params(r#"{"tag"?: string, "source"?: Source (added if new), "pages"?: string}"#),
-        CommandSpec::new("references.citationStyle", "Style", "References › Citations & Bibliography", |s, v| {
+        spec!("references.citation", "Insert Citation", "References › Citations & Bibliography", citation).params(r#"{"tag"?: string, "source"?: Source (added if new), "pages"?: string}"#),
+        spec!("references.citationStyle", "Style", "References › Citations & Bibliography", |s, v| {
             let st = p::str(v, "style").unwrap_or("APA");
             let st = find_style(st).ok_or_else(|| {
                 CmdError::Params(format!("style must be one of {:?}", STYLES.iter().map(|x| x.name).collect::<Vec<_>>()))
@@ -49,20 +49,20 @@ pub fn specs() -> Vec<CommandSpec> {
         .params(
             r#"{"style": "APA|Chicago|GB/T 7714|GOST (name sort)|GOST (title sort)|Harvard (Anglia)|IEEE|ISO 690 (author-date)|ISO 690 (numerical)|MLA|SIST02|Turabian" (Word's style names work too)}"#,
         ),
-        CommandSpec::new("references.bibliography", "Bibliography", "References › Citations & Bibliography", |s, v| {
+        spec!("references.bibliography", "Bibliography", "References › Citations & Bibliography", |s, v| {
             let title = p::str(v, "title").unwrap_or(style(&s.bib_style).bib_title).to_string();
             generated_list(s, "BIBLIOGRAPHY", &title)?;
             sel_result(s)
         })
         .params(r#"{"title"?: string}"#),
-        CommandSpec::new("references.tableOfFigures", "Insert Table of Figures", "References › Captions", table_of_figures).params(
+        spec!("references.tableOfFigures", "Insert Table of Figures", "References › Captions", table_of_figures).params(
             r#"{"label"?: "Figure|Table|Equation" or a caption label of your own, "includeLabel"?: bool, "pageNumbers"?: bool, "rightAlign"?: bool, "tabLeader"?: "dot|hyphen|underscore|none"}"#,
         ),
-        CommandSpec::new("references.updateFigures", "Update Table", "References › Captions", |s, _| {
+        spec!("references.updateFigures", "Update Table", "References › Captions", |s, _| {
             update_generated(s)?;
             sel_result(s)
         }),
-        CommandSpec::new("references.markCitation", "Mark Citation", "References › Table of Authorities", |s, v| {
+        spec!("references.markCitation", "Mark Citation", "References › Table of Authorities", |s, v| {
             let entry = p::str(v, "entry").map(str::to_string).unwrap_or_else(|| s.selected_text().trim().to_string());
             if entry.is_empty() {
                 return Err(CmdError::Params("select a citation or give `entry`".into()));
@@ -73,20 +73,20 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"entry"?: string}"#)
         .key(super::non_mac("Alt+Shift+I")),
-        CommandSpec::new("references.tableOfAuthorities", "Insert Table of Authorities", "References › Table of Authorities", |s, _| {
+        spec!("references.tableOfAuthorities", "Insert Table of Authorities", "References › Table of Authorities", |s, _| {
             generated_list(s, "TOA", "Table of Authorities")?;
             sel_result(s)
         }),
-        CommandSpec::new("references.updateAuthorities", "Update Table", "References › Table of Authorities", |s, _| {
+        spec!("references.updateAuthorities", "Update Table", "References › Table of Authorities", |s, _| {
             update_generated(s)?;
             sel_result(s)
         }),
-        CommandSpec::new("insert.crossReference", "Cross-reference", "Insert › Links", cross_ref)
+        spec!("insert.crossReference", "Cross-reference", "Insert › Links", cross_ref)
             .params(r#"{"to": "heading|bookmark|figure|table|equation|label:<Name> (a caption label of your own)", "target": string (text / name / number), "show"?: "text|page|number|aboveBelow"} or {} to list targets"#),
-        CommandSpec::new("references.noteOptions", "Footnote and Endnote", "References › Footnotes", super::references::note_options).params(
+        spec!("references.noteOptions", "Footnote and Endnote", "References › Footnotes", super::references::note_options).params(
             r#"{"kind"?: "footnote|endnote", "pos"?: "pageBottom|beneathText" (footnotes) | "sectEnd|docEnd" (endnotes), "numFmt"?: "decimal|lowerRoman|upperRoman|lowerLetter|upperLetter|…", "numStart"?: 1-32767, "numRestart"?: "continuous|eachSect|eachPage" (each page: footnotes only), "scope"?: "document|section", "footnoteFormat"?: …, "endnoteFormat"?: …} — no settings: the options in effect at the caret"#,
         ),
-        CommandSpec::new("references.researcher", "Researcher", "References › Research", |s, _| {
+        spec!("references.researcher", "Researcher", "References › Research", |s, _| {
             s.status = "Researcher needs an online service; WordCraft keeps your documents offline.".into();
             Ok(json!({"available": false}))
         })

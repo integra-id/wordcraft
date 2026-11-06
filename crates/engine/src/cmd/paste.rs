@@ -35,7 +35,7 @@ pub const FORMATS: [(&str, &str); 5] = [
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("edit.pasteSpecial", "Paste Special", "Home › Clipboard › Paste", paste_special)
+        spec!("edit.pasteSpecial", "Paste Special", "Home › Clipboard › Paste", paste_special)
             .key("Mod+Alt+V")
             .params(r#"{"as"?: "formatted"|"rtf"|"html"|"picture"|"text", "text"?: string, "html"?: string, "rtf"?: string, "picture"?: base64}"#),
     ]

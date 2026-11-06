@@ -7119,7 +7119,6 @@ name = "wordcraft-zotero"
 version = "0.15.1"
 dependencies = [
  "log",
- "proptest",
  "serde_json",
  "thiserror 2.0.21",
  "wordcraft-doc",

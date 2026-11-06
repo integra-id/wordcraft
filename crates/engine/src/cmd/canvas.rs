@@ -59,26 +59,27 @@ pub fn selected_canvas(s: &Session) -> Option<(Pos, &InlineObject)> {
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("insert.canvas", "Drawing Canvas", "Insert › Illustrations", insert)
+        spec!("insert.canvas", "Drawing Canvas", "Insert › Illustrations", insert)
             .params(r#"{"width"?: pt (default 432 = 6"), "height"?: pt (default 216 = 3"), "fill"?: "RRGGBB", "outline"?: "RRGGBB"}  (in line with text at the caret; it stays selected, so the next Pictures, Shapes or Text Box goes inside it)"#)
             .when(|s| {
                 matches!(s.sel.focus.story, StoryRef::Part(id) if s.doc.parts.get(&id).is_some_and(|p| p.kind == PartKind::TextBox))
                     .then_some("a drawing canvas can't go inside a text box")
             }),
-        CommandSpec::new("canvas.fit", "Fit", "Shape Format › Drawing Canvas", fit)
+        spec!("canvas.fit", "Fit", "Shape Format › Drawing Canvas", fit)
             .params(r#"{}  (shrinks the selected canvas's frame to its drawing: the members move to its top-left corner)"#)
             .when(has_canvas),
-        CommandSpec::new("canvas.expand", "Expand", "Shape Format › Drawing Canvas", expand)
+        spec!("canvas.expand", "Expand", "Shape Format › Drawing Canvas", expand)
             .params(r#"{"by"?: pt (default 36)}  (grows the frame right and down; at least enough to show every member)"#)
             .when(has_canvas),
-        CommandSpec::new("canvas.scale", "Scale Drawing", "Shape Format › Drawing Canvas", scale)
+        spec!("canvas.scale", "Scale Drawing", "Shape Format › Drawing Canvas", scale)
             .params(r#"{"factor": number (0.1–10)}  (scales the frame and every member together)"#)
             .when(has_canvas),
-        CommandSpec::new("select.member", "Select Canvas Member", "Shape Format › Drawing Canvas", select_member)
+        spec!("select.member", "Select Canvas Member", "Shape Format › Drawing Canvas", select_member)
             .params(r#"{"index": n | null}  (picks member `index` of the selected drawing canvas on its own: Shape Format, Size, Rotate, Alt Text, Delete, Cut and Copy then act on it, and Move or Resize and Nudge move it inside the canvas; null: the canvas itself again)"#)
             .when(has_canvas)
             .pure(),
-        CommandSpec::new("canvas.member", "Canvas Member", "Shape Format › Drawing Canvas", member)
+        spec!("canvas.member", "Canvas Member", "Shape Format › Drawing Canvas", member)
+
             .params(r#"{"index": n, "x"?: pt, "y"?: pt, "width"?: pt, "height"?: pt, "delete"?: bool}  (moves, resizes or removes member `index` of the selected canvas; x/y from the canvas's top-left; with no change, returns the members)"#)
             .when(has_canvas),
     ]

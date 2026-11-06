@@ -22,7 +22,7 @@ const MAX_LINES: usize = 100_000;
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("select.column", "Column Selection", "Editing › Selection", select_column)
+        spec!("select.column", "Column Selection", "Editing › Selection", select_column)
             .key("Mod+Shift+F8")
             .params(
                 r#"{"anchor": Pos, "focus": Pos} | {"from": {"page": n, "x": pt, "y": pt}, "to": {"page": n, "x": pt, "y": pt}, "story"?: StoryRef} | {"on"?: bool} (no corners: toggle column selection mode, where the arrow keys extend the block)"#,

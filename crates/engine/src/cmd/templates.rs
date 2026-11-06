@@ -29,29 +29,29 @@ const MAX_NAME: usize = 253;
 pub fn specs() -> Vec<CommandSpec> {
     const LOC: &str = "View › Templates › Templates and Add-ins";
     vec![
-        CommandSpec::new("tools.templates", "Templates and Add-ins", "View › Templates", |s, _| Ok(state(s)))
+        spec!("tools.templates", "Templates and Add-ins", "View › Templates", |s, _| Ok(state(s)))
             .params(r#"{} → {"template": path|null, "linkStyles": bool} (from the ribbon, the app shows the dialog)"#)
         .pure(),
-        CommandSpec::new("tools.attachTemplate", "Attach Template", LOC, attach)
+        spec!("tools.attachTemplate", "Attach Template", LOC, attach)
             .params(r#"{"path": string, "linkStyles"?: bool, "update"?: bool (update the styles from it now), "data"?: base64 (the template's bytes, for "update")}"#),
-        CommandSpec::new("tools.detachTemplate", "Detach Template", LOC, |s, _| {
+        spec!("tools.detachTemplate", "Detach Template", LOC, |s, _| {
             s.doc.settings.attached_template = None;
             s.doc.settings.link_styles = false;
             Ok(state(s))
         }),
-        CommandSpec::new("tools.linkStyles", "Automatically Update Document Styles", LOC, |s, v| {
+        spec!("tools.linkStyles", "Automatically Update Document Styles", LOC, |s, v| {
             s.doc.settings.link_styles = p::bool(v, "value").unwrap_or(!s.doc.settings.link_styles);
             Ok(state(s))
         })
         .params(r#"{"value"?: bool (default: toggle)}"#),
-        CommandSpec::new("tools.updateStyles", "Update Styles from Template", LOC, update_styles)
+        spec!("tools.updateStyles", "Update Styles from Template", LOC, update_styles)
             .params(r#"{"path"?: string (default: the attached template), "data"?: base64 (the file's bytes; `path` then only names it)} → {"added", "replaced"}"#),
-        CommandSpec::new("styles.organizer", "Organizer", "View › Templates › Organizer", organizer)
+        spec!("styles.organizer", "Organizer", "View › Templates › Organizer", organizer)
             .params(r#"{"path"?: string, "data"?: base64} → {"document": [style], "file"?: {"path", "styles": [style]}}"#)
             .pure(),
-        CommandSpec::new("styles.copyFrom", "Copy Styles", "View › Templates › Organizer", copy_from)
+        spec!("styles.copyFrom", "Copy Styles", "View › Templates › Organizer", copy_from)
             .params(r#"{"path": string, "data"?: base64, "styles": [name or id]} → {"added", "replaced", "skipped"}"#),
-        CommandSpec::new("styles.rename", "Rename Style", "View › Templates › Organizer", rename)
+        spec!("styles.rename", "Rename Style", "View › Templates › Organizer", rename)
             .params(r#"{"style": string (name or id; custom styles only), "name": string}"#),
     ]
 }

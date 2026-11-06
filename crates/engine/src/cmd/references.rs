@@ -31,33 +31,33 @@ use toc::{insert_toc, remove_toc, toc_range};
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("references.toc", "Table of Contents", "References › Table of Contents", insert_toc).params(
+        spec!("references.toc", "Table of Contents", "References › Table of Contents", insert_toc).params(
             r#"{"levels"?: 1-9, "title"?: string, "pageNumbers"?: bool, "rightAlign"?: bool, "tabLeader"?: "dot|hyphen|underscore|none", "hyperlinks"?: bool, "headingStyles"?: bool, "outlineLevels"?: bool, "tcFields"?: bool, "styleLevels"?: {style name: 1-9}} (replaces an existing table; {} updates it)"#,
         ),
-        CommandSpec::new("references.updateToc", "Update Table", "References › Table of Contents", |s, _| {
+        spec!("references.updateToc", "Update Table", "References › Table of Contents", |s, _| {
             update_toc(s)?;
             sel_result(s)
         }),
-        CommandSpec::new("references.removeToc", "Remove Table of Contents", "References › Table of Contents", |s, _| {
+        spec!("references.removeToc", "Remove Table of Contents", "References › Table of Contents", |s, _| {
             if let Some((start, end)) = toc_range(s) {
                 remove_toc(s, start, end)?;
                 s.clamp_selection();
             }
             sel_result(s)
         }),
-        CommandSpec::new("references.addText", "Add Text", "References › Table of Contents", |s, v| {
+        spec!("references.addText", "Add Text", "References › Table of Contents", |s, v| {
             let level = p::u64(v, "level").unwrap_or(0).min(9) as u8;
             super::para::fmt(s, &|pp| pp.outline_level = if level == 0 { Some(9) } else { Some(level - 1) })
         })
         .params(r#"{"level": 0 (do not show) | 1-9}"#),
-        CommandSpec::new("references.footnote", "Insert Footnote", "References › Footnotes", |s, v| note(s, v, NoteKind::Footnote))
+        spec!("references.footnote", "Insert Footnote", "References › Footnotes", |s, v| note(s, v, NoteKind::Footnote))
             .key("Mod+Alt+F")
             .params(r#"{"text"?: string, "mark"?: string (a custom mark instead of the number)}"#),
-        CommandSpec::new("references.endnote", "Insert Endnote", "References › Footnotes", |s, v| note(s, v, NoteKind::Endnote))
+        spec!("references.endnote", "Insert Endnote", "References › Footnotes", |s, v| note(s, v, NoteKind::Endnote))
             // macOS takes ⌘⌥D to show and hide the Dock; Word for Mac uses ⌘⌥E.
             .key(super::mac_or("Mod+Alt+E", "Mod+Alt+D"))
             .params(r#"{"text"?: string, "mark"?: string (a custom mark instead of the number)}"#),
-        CommandSpec::new("references.convertNotes", "Convert Notes", "References › Footnotes", |s, v| {
+        spec!("references.convertNotes", "Convert Notes", "References › Footnotes", |s, v| {
             let (foot, end) = match p::req_str(v, "to")? {
                 "endnote" | "endnotes" => (true, false),
                 "footnote" | "footnotes" => (false, true),
@@ -68,7 +68,7 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(json!({"converted": n}))
         })
         .params(r#"{"to": "endnote" (footnotes become endnotes) | "footnote" (endnotes become footnotes) | "swap"}"#),
-        CommandSpec::new("references.nextFootnote", "Next Footnote", "References › Footnotes", |s, _| {
+        spec!("references.nextFootnote", "Next Footnote", "References › Footnotes", |s, _| {
             let caret = s.sel.focus.clone();
             let refs = note_refs(s, Some(NoteKind::Footnote));
             if let Some(p) = refs.iter().find(|p| **p > caret).or(refs.first()) {
@@ -78,7 +78,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .key(super::non_mac("Alt+Shift+> / Alt+Shift+."))
         .pure(),
-        CommandSpec::new("references.notes", "Show Notes", "References › Footnotes", |s, _| {
+        spec!("references.notes", "Show Notes", "References › Footnotes", |s, _| {
             let mut out = Vec::new();
             for (id, part) in &s.doc.parts {
                 if matches!(part.kind, PartKind::Footnote | PartKind::Endnote) {
@@ -88,10 +88,10 @@ pub fn specs() -> Vec<CommandSpec> {
             Ok(Value::Array(out))
         })
         .pure(),
-        CommandSpec::new("references.caption", "Insert Caption", "References › Captions", caption)
+        spec!("references.caption", "Insert Caption", "References › Captions", caption)
             .params(r#"{"label"?: "Figure|Table|Equation|any label", "text"?: string, "position"?: "below|above", "excludeLabel"?: bool, "format"?: "ARABIC|alphabetic|ALPHABETIC|roman|ROMAN", "chapter"?: heading level 1-9, "separator"?: "-|.|:|—|–"}"#),
         // F9: update fields; the selected ones that showed their code show their result again.
-        CommandSpec::new("references.updateFields", "Update Field", "References", |s, v| {
+        spec!("references.updateFields", "Update Field", "References", |s, v| {
             update_fields_in(s, v.get("all").and_then(Value::as_bool).unwrap_or(false))?;
             super::fields::show_results(s)?;
             sel_result(s)

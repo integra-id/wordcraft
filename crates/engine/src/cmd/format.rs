@@ -16,7 +16,7 @@ pub const SIZES: [f32; 17] = [8.0, 9.0, 10.0, 10.5, 11.0, 12.0, 14.0, 16.0, 18.0
 /// Register character-formatting commands, their parameters and keyboard bindings.
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("format.bold", "Bold", "Home › Font", |s, v| {
+        spec!("format.bold", "Bold", "Home › Font", |s, v| {
             // The button formats both plain and complex-script text explicitly.
             toggle(
                 s,
@@ -30,7 +30,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .key("Mod+B")
         .params(r#"{"value"?: bool}"#),
-        CommandSpec::new("format.italic", "Italic", "Home › Font", |s, v| {
+        spec!("format.italic", "Italic", "Home › Font", |s, v| {
             toggle(
                 s,
                 v,
@@ -43,29 +43,29 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .key("Mod+I")
         .params(r#"{"value"?: bool}"#),
-        CommandSpec::new("format.underline", "Underline", "Home › Font", underline)
+        spec!("format.underline", "Underline", "Home › Font", underline)
             .key("Mod+U")
             .params(r#"{"value"?: bool, "style"?: "single|double|thick|dotted|dash|dotDash|dotDotDash|wave|words"}"#),
-        CommandSpec::new("format.doubleUnderline", "Double Underline", "Home › Font › Underline", |s, _| {
+        spec!("format.doubleUnderline", "Double Underline", "Home › Font › Underline", |s, _| {
             underline(s, &json!({"style": "double"}))
         })
         .key("Mod+Shift+D"),
-        CommandSpec::new("format.wordUnderline", "Underline Words Only", "Home › Font › Underline", |s, _| {
+        spec!("format.wordUnderline", "Underline Words Only", "Home › Font › Underline", |s, _| {
             underline(s, &json!({"style": "words"}))
         })
         .key("Mod+Shift+W"),
-        CommandSpec::new("format.strikethrough", "Strikethrough", "Home › Font", |s, v| toggle(s, v, |r| r.strike, |c, on| c.strike = Some(on)))
+        spec!("format.strikethrough", "Strikethrough", "Home › Font", |s, v| toggle(s, v, |r| r.strike, |c, on| c.strike = Some(on)))
             .key("Mod+Shift+X")
             .params(r#"{"value"?: bool}"#),
         // Note: off clears the direct property only; a border inherited from a character style stays on.
-        CommandSpec::new("format.border", "Character Border", "Home › Font", |s, v| {
+        spec!("format.border", "Character Border", "Home › Font", |s, v| {
             toggle(s, v, |r| r.border.is_some(), |c, on| c.border = on.then(|| Border::single(0.5)))
         })
         .params(r#"{"value"?: bool}"#),
-        CommandSpec::new("format.doubleStrikethrough", "Double Strikethrough", "Home › Font › Font", |s, v| {
+        spec!("format.doubleStrikethrough", "Double Strikethrough", "Home › Font › Font", |s, v| {
             toggle(s, v, |r| r.double_strike, |c, on| c.double_strike = Some(on))
         }),
-        CommandSpec::new("format.subscript", "Subscript", "Home › Font", |s, v| {
+        spec!("format.subscript", "Subscript", "Home › Font", |s, v| {
             toggle(
                 s,
                 v,
@@ -74,7 +74,7 @@ pub fn specs() -> Vec<CommandSpec> {
             )
         })
         .key("Mod+="),
-        CommandSpec::new("format.superscript", "Superscript", "Home › Font", |s, v| {
+        spec!("format.superscript", "Superscript", "Home › Font", |s, v| {
             toggle(
                 s,
                 v,
@@ -83,63 +83,63 @@ pub fn specs() -> Vec<CommandSpec> {
             )
         })
         .key("Mod+Shift+="),
-        CommandSpec::new("format.allCaps", "All Caps", "Home › Font › Font", |s, v| toggle(s, v, |r| r.caps, |c, on| c.caps = Some(on)))
+        spec!("format.allCaps", "All Caps", "Home › Font › Font", |s, v| toggle(s, v, |r| r.caps, |c, on| c.caps = Some(on)))
             .key("Mod+Shift+A"),
-        CommandSpec::new("format.smallCaps", "Small Caps", "Home › Font › Font", |s, v| {
+        spec!("format.smallCaps", "Small Caps", "Home › Font › Font", |s, v| {
             toggle(s, v, |r| r.small_caps, |c, on| c.small_caps = Some(on))
         })
         .key("Mod+Shift+K"),
-        CommandSpec::new("format.hidden", "Hidden", "Home › Font › Font", |s, v| toggle(s, v, |r| r.hidden, |c, on| c.hidden = Some(on)))
+        spec!("format.hidden", "Hidden", "Home › Font › Font", |s, v| toggle(s, v, |r| r.hidden, |c, on| c.hidden = Some(on)))
             .key("Mod+Shift+H"),
-        CommandSpec::new("format.outline", "Outline", "Home › Font › Text Effects", |s, v| {
+        spec!("format.outline", "Outline", "Home › Font › Text Effects", |s, v| {
             toggle(s, v, |r| r.outline, |c, on| c.outline = Some(on))
         }),
-        CommandSpec::new("format.shadow", "Shadow", "Home › Font › Text Effects", |s, v| toggle(s, v, |r| r.shadow, |c, on| c.shadow = Some(on))),
-        CommandSpec::new("format.emboss", "Emboss", "Home › Font › Font", |s, v| toggle(s, v, |r| r.emboss, |c, on| c.emboss = Some(on))),
-        CommandSpec::new("format.engrave", "Engrave", "Home › Font › Font", |s, v| toggle(s, v, |r| r.engrave, |c, on| c.engrave = Some(on))),
-        CommandSpec::new("format.font", "Font", "Home › Font", font).key("Mod+Shift+F").params(r#"{"name"?: string, "eastAsia"?: string}"#),
-        CommandSpec::new("format.size", "Font Size", "Home › Font", size).key("Mod+Shift+P").params(r#"{"size": number}"#),
-        CommandSpec::new("format.growFont", "Increase Font Size", "Home › Font", |s, _| step_size(s, 1)).key("Mod+Shift+. / Mod+Shift+>"),
-        CommandSpec::new("format.shrinkFont", "Decrease Font Size", "Home › Font", |s, _| step_size(s, -1)).key("Mod+Shift+, / Mod+Shift+<"),
-        CommandSpec::new("format.growFont1", "Grow Font 1 Point", "Home › Font", |s, _| nudge_size(s, 1.0)).key("Mod+]"),
-        CommandSpec::new("format.shrinkFont1", "Shrink Font 1 Point", "Home › Font", |s, _| nudge_size(s, -1.0)).key("Mod+["),
-        CommandSpec::new("format.color", "Font Color", "Home › Font", color).params(r#"{"color": "RRGGBB" | "auto"}"#),
-        CommandSpec::new("format.underlineColor", "Underline Color", "Home › Font › Underline", underline_color)
+        spec!("format.shadow", "Shadow", "Home › Font › Text Effects", |s, v| toggle(s, v, |r| r.shadow, |c, on| c.shadow = Some(on))),
+        spec!("format.emboss", "Emboss", "Home › Font › Font", |s, v| toggle(s, v, |r| r.emboss, |c, on| c.emboss = Some(on))),
+        spec!("format.engrave", "Engrave", "Home › Font › Font", |s, v| toggle(s, v, |r| r.engrave, |c, on| c.engrave = Some(on))),
+        spec!("format.font", "Font", "Home › Font", font).key("Mod+Shift+F").params(r#"{"name"?: string, "eastAsia"?: string}"#),
+        spec!("format.size", "Font Size", "Home › Font", size).key("Mod+Shift+P").params(r#"{"size": number}"#),
+        spec!("format.growFont", "Increase Font Size", "Home › Font", |s, _| step_size(s, 1)).key("Mod+Shift+. / Mod+Shift+>"),
+        spec!("format.shrinkFont", "Decrease Font Size", "Home › Font", |s, _| step_size(s, -1)).key("Mod+Shift+, / Mod+Shift+<"),
+        spec!("format.growFont1", "Grow Font 1 Point", "Home › Font", |s, _| nudge_size(s, 1.0)).key("Mod+]"),
+        spec!("format.shrinkFont1", "Shrink Font 1 Point", "Home › Font", |s, _| nudge_size(s, -1.0)).key("Mod+["),
+        spec!("format.color", "Font Color", "Home › Font", color).params(r#"{"color": "RRGGBB" | "auto"}"#),
+        spec!("format.underlineColor", "Underline Color", "Home › Font › Underline", underline_color)
             .params(r#"{"color": "RRGGBB" | "auto"} (the underline's own colour; "auto" follows the text colour)"#),
-        CommandSpec::new("format.highlight", "Text Highlight Color", "Home › Font", highlight)
+        spec!("format.highlight", "Text Highlight Color", "Home › Font", highlight)
             .params(
                 r#"{"color"?: "yellow|brightGreen|turquoise|pink|blue|red|darkBlue|teal|green|violet|darkRed|darkYellow|gray50|gray25|black|none"} (explicit colour sets it; omitted toggles the last chosen colour, initially yellow)"#,
             )
             // ⌘⌥H hides other apps on macOS.
             .key(super::non_mac("Mod+Alt+H")),
-        CommandSpec::new("format.shading", "Character Shading", "Home › Font", |s, v| {
+        spec!("format.shading", "Character Shading", "Home › Font", |s, v| {
             let c = p::str(v, "color").and_then(Rgb::parse);
             apply(s, &|x| x.shading = c)
         })
         .params(r#"{"color": "RRGGBB" | null}"#),
-        CommandSpec::new("format.changeCase", "Change Case", "Home › Font", change_case)
+        spec!("format.changeCase", "Change Case", "Home › Font", change_case)
             .key("Shift+F3")
             .params(r#"{"mode"?: "sentence|lower|upper|title|toggle"}"#),
-        CommandSpec::new("format.clear", "Clear All Formatting", "Home › Font", clear),
+        spec!("format.clear", "Clear All Formatting", "Home › Font", clear),
         // Word's Ctrl+Space; ⌘Space is Spotlight, so Word for Mac uses ⌃Space.
-        CommandSpec::new("format.resetChar", "Reset Character Formatting", "Home › Font", reset_char).key(super::mac_or("Ctrl+Space", "Mod+Space")),
-        CommandSpec::new("format.spacing", "Character Spacing", "Home › Font › Font › Advanced", |s, v| {
+        spec!("format.resetChar", "Reset Character Formatting", "Home › Font", reset_char).key(super::mac_or("Ctrl+Space", "Mod+Space")),
+        spec!("format.spacing", "Character Spacing", "Home › Font › Font › Advanced", |s, v| {
             let x = p::req_f32(v, "points")?.clamp(-100.0, 100.0);
             apply(s, &|c| c.spacing = Some(x))
         })
         .params(r#"{"points": number}"#),
-        CommandSpec::new("format.scale", "Character Scale", "Home › Font › Font › Advanced", |s, v| {
+        spec!("format.scale", "Character Scale", "Home › Font › Font › Advanced", |s, v| {
             let x = p::req_f32(v, "percent")?.clamp(1.0, 600.0);
             apply(s, &|c| c.scale = Some(x))
         })
         .params(r#"{"percent": number}"#),
-        CommandSpec::new("format.position", "Character Position", "Home › Font › Font › Advanced", |s, v| {
+        spec!("format.position", "Character Position", "Home › Font › Font › Advanced", |s, v| {
             let x = p::req_f32(v, "points")?.clamp(-1584.0, 1584.0);
             apply(s, &|c| c.position = Some(x))
         })
         .params(r#"{"points": number}"#),
         // Font › Emphasis mark: a mark over (or under) each character.
-        CommandSpec::new("format.emphasisMark", "Emphasis Mark", "Home › Font › Font", |s, v| {
+        spec!("format.emphasisMark", "Emphasis Mark", "Home › Font › Font", |s, v| {
             use wordcraft_doc::props::EmphasisMark;
             let name = p::str(v, "mark").unwrap_or("dot");
             let mark = EmphasisMark::ALL
@@ -149,17 +149,18 @@ pub fn specs() -> Vec<CommandSpec> {
             apply(s, &|c| c.emphasis = Some(mark))
         })
         .params(r#"{"mark"?: "none" | "dot" | "comma" | "circle" | "underDot"}"#),
-        CommandSpec::new("format.charStyle", "Apply Character Style", "Home › Styles", char_style).params(r#"{"style": string}"#),
-        CommandSpec::new("format.set", "Set Character Formatting", "Home › Font › Font", set).params(r#"{"props": CharProps}"#),
-        CommandSpec::new("format.fontDialog", "Font Dialog", "Home › Font", |s, _| {
+        spec!("format.charStyle", "Apply Character Style", "Home › Styles", char_style).params(r#"{"style": string}"#),
+        spec!("format.set", "Set Character Formatting", "Home › Font › Font", set).params(r#"{"props": CharProps}"#),
+        spec!("format.fontDialog", "Font Dialog", "Home › Font", |s, _| {
+
             s.push_ui_request(json!({"open": "font"}));
             sel_result(s)
         })
         .key("Mod+D")
         .pure(),
-        CommandSpec::new("format.enclose", "Enclose Characters", "Home › Font", enclose)
+        spec!("format.enclose", "Enclose Characters", "Home › Font", enclose)
             .params(r#"{"shape": "circle|square|triangle|diamond" | null, "style"?: "shrink|enlarge", "text"?: string}"#),
-        CommandSpec::new("format.state", "Formatting at Selection", "Home › Font", |s, _| Ok(state(s))).pure(),
+        spec!("format.state", "Formatting at Selection", "Home › Font", |s, _| Ok(state(s))).pure(),
     ]
 }
 

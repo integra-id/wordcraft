@@ -19,24 +19,24 @@ const EFFECT_PARAMS: &str = r#"{"style"?: "solid"|"outlined"|"hollow"|"gradient"
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("insert.wordArt", "WordArt", "Insert › Text", insert).params(
+        spec!("insert.wordArt", "WordArt", "Insert › Text", insert).params(
             r#"{"text"?: string, "style"?: WordArt style id (see format.textEffects), "transform"?: "textArchUp"|"textArchDown"|"textCircle"|"textWave1"|… (a DrawingML preset text warp)}"#,
         ),
-        CommandSpec::new("format.textEffects", "Text Effects", "Home › Font", text_effects).params(EFFECT_PARAMS),
-        CommandSpec::new("wordArt.style", "WordArt Styles", "Shape Format › WordArt Styles", |s, v| {
+        spec!("format.textEffects", "Text Effects", "Home › Font", text_effects).params(EFFECT_PARAMS),
+        spec!("wordArt.style", "WordArt Styles", "Shape Format › WordArt Styles", |s, v| {
             let id = p::req_str(v, "style")?;
             text_effects(s, &json!({"style": id}))
         })
         .params(r#"{"style": "solid"|"outlined"|"hollow"|"gradient"|"shadowed"|"glowing"|"reflected"|"sunset"}"#),
-        CommandSpec::new("wordArt.textFill", "Text Fill", "Shape Format › WordArt Styles", |s, v| {
+        spec!("wordArt.textFill", "Text Fill", "Shape Format › WordArt Styles", |s, v| {
             text_effects(s, &json!({"fill": v.get("fill").or_else(|| v.get("color")).cloned().unwrap_or(Value::Null)}))
         })
         .params(r#"{"fill": "RRGGBB"|"none"|{"gradient": ["RRGGBB", …], "angle"?: deg}|null}"#),
-        CommandSpec::new("wordArt.textOutline", "Text Outline", "Shape Format › WordArt Styles", |s, v| {
+        spec!("wordArt.textOutline", "Text Outline", "Shape Format › WordArt Styles", |s, v| {
             text_effects(s, &json!({"outline": v.get("outline").cloned().unwrap_or_else(|| v.clone())}))
         })
         .params(r#"{"color"?: "RRGGBB"|null, "width"?: pt} or {"outline": "none"|null}"#),
-        CommandSpec::new("wordArt.transform", "Transform", "Shape Format › WordArt Styles", transform)
+        spec!("wordArt.transform", "Transform", "Shape Format › WordArt Styles", transform)
             .params(r#"{"preset": "textArchUp"|"textArchDown"|"textCircle"|"textWave1"|"textSlantUp"|"textSlantDown"|"textInflate"|"textDeflate"|"textChevron"|"textChevronInverted"|"textTriangle"|"textTriangleInverted"|… (any DrawingML preset text warp)|"none", "adj"?: n (the preset's adjust value)}"#),
     ]
 }

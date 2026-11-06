@@ -17,15 +17,16 @@ use crate::{CmdError, CmdResult, CommandSpec, Session, p};
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("font.add", "Add Font…", "Home › Font", add)
+        spec!("font.add", "Add Font…", "Home › Font", add)
             .params(r#"{"path"?: string, "data"?: base64, "name"?: string (file name for "data")} — a TTF, OTF, TTC, WOFF or WOFF2 file; none: pick a file"#)
             .pure(),
-        CommandSpec::new("font.list", "Added Fonts", "Home › Font", list).params(r#"{"all"?: bool (also every available family)}"#).pure(),
-        CommandSpec::new("font.remove", "Remove Added Font", "Home › Font", remove).params(r#"{"family": string}"#).pure(),
-        CommandSpec::new("font.loadSystem", "Load System Installed Fonts…", "Home › Font", load_system).pure(),
-        CommandSpec::new("font.missing", "Missing Fonts", "Status Bar", missing)
+        spec!("font.list", "Added Fonts", "Home › Font", list).params(r#"{"all"?: bool (also every available family)}"#).pure(),
+        spec!("font.remove", "Remove Added Font", "Home › Font", remove).params(r#"{"family": string}"#).pure(),
+        spec!("font.loadSystem", "Load System Installed Fonts…", "Home › Font", load_system).pure(),
+        spec!("font.missing", "Missing Fonts", "Status Bar", missing)
             .params(r#"{} → {"missing": [{"font": string, "shownAs": [string] (the families drawn instead), "metricCompatible": bool (its substitute measures like the font)}]} — the text the current view shows"#)
             .pure(),
+
     ]
 }
 

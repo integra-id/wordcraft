@@ -15,84 +15,84 @@ fn toggle(s: &mut Session, v: &Value, f: fn(&mut crate::ViewState) -> &mut bool)
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("view.marks", "Show/Hide ¶", "Home › Paragraph", |s, v| {
+        spec!("view.marks", "Show/Hide ¶", "Home › Paragraph", |s, v| {
             let r = toggle(s, v, |x| &mut x.marks);
             s.relayout();
             r
         })
         .key("Mod+Shift+8 / Mod+8")
         .pure(),
-        CommandSpec::new("view.printLayout", "Print Layout", "View › Views", |s, _| mode(s, ViewMode::Print, false)).key("Mod+Alt+P").pure(),
-        CommandSpec::new("view.webLayout", "Web Layout", "View › Views", |s, _| mode(s, ViewMode::Web, false)).pure(),
-        CommandSpec::new("view.draft", "Draft", "View › Views", |s, _| mode(s, ViewMode::Draft, false)).key("Mod+Alt+N").pure(),
+        spec!("view.printLayout", "Print Layout", "View › Views", |s, _| mode(s, ViewMode::Print, false)).key("Mod+Alt+P").pure(),
+        spec!("view.webLayout", "Web Layout", "View › Views", |s, _| mode(s, ViewMode::Web, false)).pure(),
+        spec!("view.draft", "Draft", "View › Views", |s, _| mode(s, ViewMode::Draft, false)).key("Mod+Alt+N").pure(),
         // The body as an outline of its headings, with the Outlining tab (`outline.*`).
-        CommandSpec::new("view.outline", "Outline", "View › Views", |s, _| mode(s, ViewMode::Outline, false)).key("Mod+Alt+O").pure(),
-        CommandSpec::new("view.readMode", "Read Mode", "View › Views", |s, _| mode(s, ViewMode::Print, true)).pure(),
-        CommandSpec::new("view.readColumnWidth", "Reading Column Width", "Reading › Layout", read_column_width)
+        spec!("view.outline", "Outline", "View › Views", |s, _| mode(s, ViewMode::Outline, false)).key("Mod+Alt+O").pure(),
+        spec!("view.readMode", "Read Mode", "View › Views", |s, _| mode(s, ViewMode::Print, true)).pure(),
+        spec!("view.readColumnWidth", "Reading Column Width", "Reading › Layout", read_column_width)
             .params(r#"{"value": "auto" | "narrow" | "medium" | "wide" | "page"}"#)
             .pure(),
-        CommandSpec::new("view.readTextSize", "Reading Text Size", "Reading › Layout", read_text_size)
+        spec!("view.readTextSize", "Reading Text Size", "Reading › Layout", read_text_size)
             .params(r#"{"value": percent (75–150)}"#)
             .pure(),
-        CommandSpec::new("view.readLineSpacing", "Reading Line Spacing", "Reading › Layout", read_line_spacing)
+        spec!("view.readLineSpacing", "Reading Line Spacing", "Reading › Layout", read_line_spacing)
             .params(r#"{"value": "document" | 1.0 | 1.25 | 1.5 | 2.0}"#)
             .pure(),
-        CommandSpec::new("view.readPageColor", "Reading Page Color", "Reading › Layout", read_page_color)
+        spec!("view.readPageColor", "Reading Page Color", "Reading › Layout", read_page_color)
             .params(r#"{"value": "none" | "sepia" | "inverse"}"#)
             .pure(),
         // Print Layout: hide the white space (margins, headers, footers) between pages. Screen only.
-        CommandSpec::new("view.hideWhiteSpace", "Hide White Space", "View › Show", |s, v| toggle(s, v, |x| &mut x.hide_white_space))
+        spec!("view.hideWhiteSpace", "Hide White Space", "View › Show", |s, v| toggle(s, v, |x| &mut x.hide_white_space))
             .params(r#"{"value"?: bool}"#)
             .pure(),
         // Focus and Full Screen View (#1678) fill the screen; turning one on turns the other off.
         // Full Screen View has no key of its own: Customize Keyboard binds one.
-        CommandSpec::new("view.focus", "Focus", "View › Immersive", |s, v| {
+        spec!("view.focus", "Focus", "View › Immersive", |s, v| {
             let r = toggle(s, v, |x| &mut x.focus_mode);
             s.view.full_screen_view &= !s.view.focus_mode;
             r
         })
         .params(r#"{"value"?: bool}"#)
         .pure(),
-        CommandSpec::new("view.fullScreenView", "Full Screen View", "View › Immersive", |s, v| {
+        spec!("view.fullScreenView", "Full Screen View", "View › Immersive", |s, v| {
             let r = toggle(s, v, |x| &mut x.full_screen_view);
             s.view.focus_mode &= !s.view.full_screen_view;
             r
         })
         .params(r#"{"value"?: bool}"#)
         .pure(),
-        CommandSpec::new("view.ruler", "Ruler", "View › Show", |s, v| toggle(s, v, |x| &mut x.ruler)).pure(),
+        spec!("view.ruler", "Ruler", "View › Show", |s, v| toggle(s, v, |x| &mut x.ruler)).pure(),
         // The drawing grid over the page (screen only; never printed or exported).
-        CommandSpec::new("view.gridlines", "Gridlines", "View › Show", |s, v| toggle(s, v, |x| &mut x.gridlines))
+        spec!("view.gridlines", "Gridlines", "View › Show", |s, v| toggle(s, v, |x| &mut x.gridlines))
             .params(r#"{"value"?: bool}"#)
             .pure(),
         // Outlines of table cells (screen only; never printed or exported).
-        CommandSpec::new("table.viewGridlines", "View Gridlines", "Table Layout › Table", |s, v| toggle(s, v, |x| &mut x.table_gridlines))
+        spec!("table.viewGridlines", "View Gridlines", "Table Layout › Table", |s, v| toggle(s, v, |x| &mut x.table_gridlines))
             .params(r#"{"value"?: bool}"#)
             .pure(),
-        CommandSpec::new("view.navigationPane", "Navigation Pane", "View › Show", |s, v| toggle(s, v, |x| &mut x.nav_pane)).pure(),
-        CommandSpec::new("view.zoom", "Zoom", "View › Zoom", zoom)
+        spec!("view.navigationPane", "Navigation Pane", "View › Show", |s, v| toggle(s, v, |x| &mut x.nav_pane)).pure(),
+        spec!("view.zoom", "Zoom", "View › Zoom", zoom)
             .params(r#"{"value": percent (10-500) | "pageWidth" | "onePage" | "multiplePages"}"#)
             .pure(),
-        CommandSpec::new("view.zoom100", "100%", "View › Zoom", |s, _| zoom(s, &json!({"value": 100}))).pure(),
-        CommandSpec::new("view.zoomIn", "Zoom In", "View › Zoom", |s, _| {
+        spec!("view.zoom100", "100%", "View › Zoom", |s, _| zoom(s, &json!({"value": 100}))).pure(),
+        spec!("view.zoomIn", "Zoom In", "View › Zoom", |s, _| {
             let z = ((s.view.zoom * 10.0).round() / 10.0 + 0.1).min(5.0);
             zoom(s, &json!({"value": z * 100.0}))
         })
         .pure(),
-        CommandSpec::new("view.zoomOut", "Zoom Out", "View › Zoom", |s, _| {
+        spec!("view.zoomOut", "Zoom Out", "View › Zoom", |s, _| {
             let z = ((s.view.zoom * 10.0).round() / 10.0 - 0.1).max(0.1);
             zoom(s, &json!({"value": z * 100.0}))
         })
         .pure(),
-        CommandSpec::new("view.onePage", "One Page", "View › Zoom", |s, _| zoom(s, &json!({"value": "onePage"}))).pure(),
-        CommandSpec::new("view.multiplePages", "Multiple Pages", "View › Zoom", |s, _| zoom(s, &json!({"value": "multiplePages"}))).pure(),
-        CommandSpec::new("view.pageWidth", "Page Width", "View › Zoom", |s, _| zoom(s, &json!({"value": "pageWidth"}))).pure(),
-        CommandSpec::new("view.darkMode", "Switch Modes", "View › Dark Mode", |s, v| toggle(s, v, |x| &mut x.dark_mode)).pure(),
+        spec!("view.onePage", "One Page", "View › Zoom", |s, _| zoom(s, &json!({"value": "onePage"}))).pure(),
+        spec!("view.multiplePages", "Multiple Pages", "View › Zoom", |s, _| zoom(s, &json!({"value": "multiplePages"}))).pure(),
+        spec!("view.pageWidth", "Page Width", "View › Zoom", |s, _| zoom(s, &json!({"value": "pageWidth"}))).pure(),
+        spec!("view.darkMode", "Switch Modes", "View › Dark Mode", |s, v| toggle(s, v, |x| &mut x.dark_mode)).pure(),
         // The interface theme itself (light, dark, or follow the OS), next to dark pages (#1861).
         // The session can't paint: like split and new windows, this queues a request the front
         // end applies to its theme setting (which persists per user). Without a value it toggles
         // light and dark, as the manual switch did.
-        CommandSpec::new("view.interfaceTheme", "Interface Theme", "View › Dark Mode", |s, v| match v.get("value") {
+        spec!("view.interfaceTheme", "Interface Theme", "View › Dark Mode", |s, v| match v.get("value") {
             None => {
                 s.push_ui_request(json!({"toggle": "interfaceTheme"}));
                 Ok(json!({"value": "toggle"}))
@@ -108,34 +108,34 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"value"?: "light" | "dark" | "system"; without it, toggles light and dark}"#)
         .pure(),
-        CommandSpec::new("view.stylesPane", "Styles Pane", "Home › Styles", |s, v| toggle(s, v, |x| &mut x.styles_pane)).pure(),
+        spec!("view.stylesPane", "Styles Pane", "Home › Styles", |s, v| toggle(s, v, |x| &mut x.styles_pane)).pure(),
         // Where the Styles pane sits: docked right or left, or floating (#1756). No `dock` reads it.
-        CommandSpec::new("view.stylesPaneDock", "Styles Pane Position", "Home › Styles", styles_pane_dock)
+        spec!("view.stylesPaneDock", "Styles Pane Position", "Home › Styles", styles_pane_dock)
             .params(r#"{"dock"?: "left" | "right" | "float"}"#)
             .pure(),
-        CommandSpec::new("view.commentsPane", "Comments Pane", "Review › Comments", |s, v| toggle(s, v, |x| &mut x.comments_pane)).pure(),
-        CommandSpec::new("view.accessibilityPane", "Accessibility Pane", "Review › Accessibility", |s, v| {
+        spec!("view.commentsPane", "Comments Pane", "Review › Comments", |s, v| toggle(s, v, |x| &mut x.comments_pane)).pure(),
+        spec!("view.accessibilityPane", "Accessibility Pane", "Review › Accessibility", |s, v| {
             toggle(s, v, |x| &mut x.accessibility_pane)
         })
         .params(r#"{"value"?: bool}"#)
         .pure(),
-        CommandSpec::new("view.altTextPane", "Alt Text Pane", "Review › Accessibility", |s, v| toggle(s, v, |x| &mut x.alt_text_pane))
+        spec!("view.altTextPane", "Alt Text Pane", "Review › Accessibility", |s, v| toggle(s, v, |x| &mut x.alt_text_pane))
             .params(r#"{"value"?: bool}"#)
             .pure(),
-        CommandSpec::new("view.formatShapePane", "Format Shape Pane", "Shape Format › Shape Styles", |s, v| {
+        spec!("view.formatShapePane", "Format Shape Pane", "Shape Format › Shape Styles", |s, v| {
             toggle(s, v, |x| &mut x.format_shape_pane)
         })
         .params(r#"{"value"?: bool}"#)
         .pure(),
-        CommandSpec::new("view.newWindow", "New Window", "View › Window", |s, _| {
+        spec!("view.newWindow", "New Window", "View › Window", |s, _| {
             s.push_ui_request(json!({"open": "newWindow"}));
             sel_result(s)
         })
         .pure(),
-        CommandSpec::new("view.switchWindows", "Switch Windows", "View › Window", switch_windows)
+        spec!("view.switchWindows", "Switch Windows", "View › Window", switch_windows)
             .params(r#"{"id"?: n (make this open document the active one)} → {"documents": [{"id", "title", "path", "dirty", "active"}]} in the order they were opened"#)
             .pure(),
-        CommandSpec::new("view.split", "Split", "View › Window", |s, _| {
+        spec!("view.split", "Split", "View › Window", |s, _| {
             s.push_ui_request(json!({"toggle": "split"}));
             sel_result(s)
         })
@@ -144,16 +144,16 @@ pub fn specs() -> Vec<CommandSpec> {
         // The window fills the screen, OS-level full screen (#980). F11 as in browsers and most
         // desktop apps; ⌃⌘F first on macOS, where Ctrl is a key of its own (elsewhere Mod is Ctrl,
         // so "Mod+Ctrl+F" would read Ctrl+Ctrl+F). Escape also leaves it. The front end applies it.
-        CommandSpec::new("view.fullScreen", "Full Screen", "View › Window", |s, v| toggle(s, v, |x| &mut x.full_screen))
+        spec!("view.fullScreen", "Full Screen", "View › Window", |s, v| toggle(s, v, |x| &mut x.full_screen))
             .params(r#"{"value"?: bool}"#)
             .key(super::mac_or("Mod+Ctrl+F / F11", "F11"))
             .when(full_screen_available)
             .pure(),
-        CommandSpec::new("view.state", "View State", "View", |s, _| serde_json::to_value(&s.view).map_err(|e| CmdError::Failed(e.to_string())))
+        spec!("view.state", "View State", "View", |s, _| serde_json::to_value(&s.view).map_err(|e| CmdError::Failed(e.to_string())))
             .pure(),
         // Word › File › Options › Advanced › Numeral: how digits look on screen, in print, PDFs
         // and page images (display only; the document text keeps the typed codepoints).
-        CommandSpec::new("view.numeral", "Numerals", "File › Options › Advanced", |s, v| match v.get("value") {
+        spec!("view.numeral", "Numerals", "File › Options › Advanced", |s, v| match v.get("value") {
             None => Ok(json!({"value": s.view.numeral})),
             Some(Value::String(name)) => {
                 let Some(mode) = NumeralMode::parse(name) else {

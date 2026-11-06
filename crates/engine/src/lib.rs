@@ -6,6 +6,15 @@
 //! CLI, the JSON control channel and the MCP server all call [`Session::run`].
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+/// [`CommandSpec::new`] for the command modules: in a build without the `editor` feature, a
+/// command outside [`viewer::VIEWER_COMMANDS`] gets [`viewer::refused`] as its handler, decided at
+/// compile time ([`viewer::builds`]), so its real handler isn't linked.
+macro_rules! spec {
+    ($id:literal, $label:expr, $location:expr, $run:expr $(,)?) => {
+        $crate::CommandSpec::new($id, $label, $location, $crate::viewer::handler::<{ $crate::viewer::builds($id) }>($run))
+    };
+}
+
 pub mod catalog;
 pub mod cmd;
 pub(crate) mod doc_state;

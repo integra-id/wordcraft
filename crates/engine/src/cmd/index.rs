@@ -19,14 +19,14 @@ const ENTRY_STYLE: &str = "ListEntry";
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("references.markEntry", "Mark Entry", "References › Index", mark_entry).params(
+        spec!("references.markEntry", "Mark Entry", "References › Index", mark_entry).params(
             r#"{"entry"?: string (the selection), "subentry"?: string, "crossReference"?: "See …", "bookmark"?: page-range bookmark, "bold"?: bool, "italic"?: bool, "all"?: bool (Mark All: every paragraph's first match of "text" or the selection)}"#,
         )
         .key(super::non_mac("Alt+Shift+X")),
-        CommandSpec::new("references.index", "Insert Index", "References › Index", insert_index).params(
+        spec!("references.index", "Insert Index", "References › Index", insert_index).params(
             r#"{"type"?: "indented|runIn", "columns"?: 1-4, "rightAlign"?: bool, "tabLeader"?: "dot|hyphen|underscore|none", "headings"?: bool (letter headings)} (replaces an existing index's settings)"#,
         ),
-        CommandSpec::new("references.updateIndex", "Update Index", "References › Index", |s, _| {
+        spec!("references.updateIndex", "Update Index", "References › Index", |s, _| {
             super::citations::update_generated(s)?;
             sel_result(s)
         }),

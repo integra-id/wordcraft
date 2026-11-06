@@ -28,10 +28,11 @@ const ITEMS: &str = r#"[string | {"text": string, "level"?: 0-7, "color"?: RRGGB
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("insert.smartArt", "SmartArt", "Insert › Illustrations", insert).params(
+        spec!("insert.smartArt", "SmartArt", "Insert › Illustrations", insert).params(
             r#"{"layout"?: "basicList|process|cycle|hierarchy|pyramid|radial|matrix|venn", "items"?: [string | {"text": string, "level"?: 0-7, "color"?: RRGGBB}], "colors"?: "accent1…accent6|colorful", "width"?: pt, "height"?: pt} (no items: sample items for the layout)"#,
+
         ),
-        CommandSpec::new("smartArt.items", "Edit Items", "SmartArt Design › Create Graphic", |s, v| {
+        spec!("smartArt.items", "Edit Items", "SmartArt Design › Create Graphic", |s, v| {
             let items = items_of(v.get("items").ok_or_else(|| CmdError::Params(format!("`items` is required: {ITEMS}")))?)?;
             edit(s, move |g| {
                 g.items = items.clone();
@@ -40,14 +41,14 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"items": [string | {"text": string, "level"?: 0-7, "color"?: RRGGBB}]} (replaces the outline)"#)
         .when(has_smart_art),
-        CommandSpec::new("smartArt.textPane", "Text Pane", "SmartArt Design › Create Graphic", |s, v| {
+        spec!("smartArt.textPane", "Text Pane", "SmartArt Design › Create Graphic", |s, v| {
             let on = p::bool(v, "value").unwrap_or(!s.view.smart_art_pane);
             s.view.smart_art_pane = on;
             Ok(json!({"value": on}))
         })
         .params(r#"{"value"?: bool} (no value: show or hide the Text Pane)"#)
         .pure(),
-        CommandSpec::new("smartArt.addShape", "Add Shape", "SmartArt Design › Create Graphic", |s, v| {
+        spec!("smartArt.addShape", "Add Shape", "SmartArt Design › Create Graphic", |s, v| {
             let after = index(v, "after")?;
             let text = p::str(v, "text").map(clean_text).unwrap_or_default();
             let below = p::bool(v, "below").unwrap_or(false);
@@ -74,7 +75,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"after"?: item index (default: the last), "text"?: string, "below"?: bool (a sub-item instead of the next item)}"#)
         .when(has_smart_art),
-        CommandSpec::new("smartArt.promote", "Promote", "SmartArt Design › Create Graphic", |s, v| {
+        spec!("smartArt.promote", "Promote", "SmartArt Design › Create Graphic", |s, v| {
             let i = index(v, "index")?;
             edit(s, move |g| {
                 let i = item_at(g, i)?;
@@ -91,7 +92,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"index"?: item index (default: the last)} (the item and the items under it move up a level)"#)
         .when(has_smart_art),
-        CommandSpec::new("smartArt.demote", "Demote", "SmartArt Design › Create Graphic", |s, v| {
+        spec!("smartArt.demote", "Demote", "SmartArt Design › Create Graphic", |s, v| {
             let i = index(v, "index")?;
             edit(s, move |g| {
                 let i = item_at(g, i)?;
@@ -111,7 +112,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"index"?: item index (default: the last)} (the item and the items under it move down a level)"#)
         .when(has_smart_art),
-        CommandSpec::new("smartArt.layout", "Change Layout", "SmartArt Design › Layouts", |s, v| {
+        spec!("smartArt.layout", "Change Layout", "SmartArt Design › Layouts", |s, v| {
             let layout = layout_of(v)?.ok_or_else(|| CmdError::Params(format!("`layout` is required: {LAYOUTS}")))?;
             edit(s, move |g| {
                 g.layout = layout;
@@ -120,7 +121,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"layout": "basicList|process|cycle|hierarchy|pyramid|radial|matrix|venn"}"#)
         .when(has_smart_art),
-        CommandSpec::new("smartArt.colors", "Change Colors", "SmartArt Design › SmartArt Styles", |s, v| {
+        spec!("smartArt.colors", "Change Colors", "SmartArt Design › SmartArt Styles", |s, v| {
             let colors = colors_of(v)?.ok_or_else(|| CmdError::Params(format!("`variant` is required: {COLORS}")))?;
             edit(s, move |g| {
                 g.colors = colors;
@@ -130,7 +131,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"variant": "accent1|accent2|accent3|accent4|accent5|accent6|colorful"} (the items' own colours are dropped)"#)
         .when(has_smart_art),
-        CommandSpec::new("smartArt.itemColor", "Item Color", "SmartArt Design › SmartArt Styles", |s, v| {
+        spec!("smartArt.itemColor", "Item Color", "SmartArt Design › SmartArt Styles", |s, v| {
             let i = index(v, "index")?;
             let color = match v.get("color") {
                 None | Some(Value::Null) => None,
@@ -150,7 +151,7 @@ pub fn specs() -> Vec<CommandSpec> {
         })
         .params(r#"{"index"?: item index (default: the last), "color"?: "RRGGBB" (none: the style's colour)}"#)
         .when(has_smart_art),
-        CommandSpec::new("smartArt.reset", "Reset Graphic", "SmartArt Design › Reset", |s, _| {
+        spec!("smartArt.reset", "Reset Graphic", "SmartArt Design › Reset", |s, _| {
             edit(s, |g| {
                 g.colors = SmartArtColors::default();
                 g.clear_custom_colors();
