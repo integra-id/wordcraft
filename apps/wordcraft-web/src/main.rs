@@ -18,9 +18,12 @@
 //! (`viewer_features`, `wordcraft_ui_egui::features`; names and examples in
 //! packaging/web/README.md).
 //! `?host=parent` (inside an `<iframe>`) talks to a same-origin parent page instead: it sends the
-//! document to open and stores what WordCraft saves (`host`), and `&author=` names the user for
-//! comments and tracked changes; its `wordcraft:config` message replaces the `hide` and
-//! `disable` lists.
+//! document to open and stores what WordCraft saves (`host`). A page can also host WordCraft in
+//! its own document (no iframe) with `data-host="page"` on the canvas, talking over DOM
+//! `CustomEvent`s on the canvas. `&author=` names the user for comments and tracked changes in
+//! either host mode; its `wordcraft:config` message replaces the `hide` and `disable` lists
+//! (also accepted as `?hide=` / `?disable=` on the URL).
+
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
 #[cfg(any(target_arch = "wasm32", test))]

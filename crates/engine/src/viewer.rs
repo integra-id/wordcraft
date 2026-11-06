@@ -166,6 +166,7 @@ pub const VIEWER_COMMANDS: &[&str] = &[
     // cmd::font
     "font.add",
     "font.list",
+    "font.missing",
     "font.remove",
     "font.loadSystem",
     // cmd::para
@@ -302,6 +303,7 @@ pub const VIEWER_COMMANDS: &[&str] = &[
     "references.researcher",
     // cmd::objects
     "select.addObject",
+    "select.member",
     "select.objects",
     // cmd::draw
     "draw.select",
